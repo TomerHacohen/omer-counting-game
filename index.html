@@ -721,6 +721,7 @@
         <div class="header">
             <h1>משחק ספירת העומר 🌾</h1>
             <p class="subtitle" id="headerSubtitle">טוען...</p>
+            <div style="font-size: 0.9em; opacity: 0.8; margin-top: 10px;" id="tzeitDebug"></div>
         </div>
 
         <div class="player-info" id="playerInfo" style="display: none;">
@@ -866,6 +867,10 @@
                 autoSyncInterval: 60000,
                 soundEnabled: true,
                 appsScriptUrl: GOOGLE_APPS_SCRIPT_URL
+            },
+            zmanim: {
+                tzeit: null, // Nightfall time for today
+                lastFetch: null
             }
         };
 
@@ -893,9 +898,13 @@
         }
 
         // Initialize game
-        function init() {
+        async function init() {
             loadFromLocalStorage();
             renderEmojiPicker();
+
+            // Fetch zmanim first to determine current Hebrew day
+            await fetchZmanim();
+
             updateHeaderSubtitle();
 
             if (!gameState.currentPlayer) {
@@ -1233,10 +1242,75 @@
             // Auto-sync will update in the background (every 60 seconds)
         }
 
-        // Calculate current Omer day
+        // Fetch zmanim (Jewish times) from Hebcal API
+        async function fetchZmanim() {
+            try {
+                const today = new Date();
+                // Format date in local timezone, not UTC
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const dateStr = `${year}-${month}-${day}`;
+                const apiUrl = `https://www.hebcal.com/zmanim?cfg=json&geonameid=281184&date=${dateStr}`;
+
+                console.log('[Zmanim Debug] Fetching from:', apiUrl);
+
+                const response = await fetch(apiUrl);
+
+                if (!response.ok) throw new Error('Failed to fetch zmanim');
+
+                const data = await response.json();
+
+                console.log('[Zmanim Debug] API Response:', data);
+
+                if (data.times && data.times.tzeit7083deg) {
+                    gameState.zmanim.tzeit = new Date(data.times.tzeit7083deg);
+                    gameState.zmanim.lastFetch = new Date();
+
+                    console.log('[Zmanim Debug] Tzeit set to:', gameState.zmanim.tzeit.toLocaleString('he-IL'));
+                } else {
+                    console.warn('[Zmanim Debug] No tzeit7083deg in response');
+                }
+            } catch (error) {
+                console.error('[Zmanim Debug] Error fetching zmanim:', error);
+                // Fallback: use approximate time (8 PM if we can't fetch)
+                const fallback = new Date();
+                fallback.setHours(20, 0, 0, 0);
+                gameState.zmanim.tzeit = fallback;
+                console.log('[Zmanim Debug] Using fallback time:', fallback.toLocaleString('he-IL'));
+            }
+        }
+
+        // Check if current time is after tzeit (nightfall)
+        function isAfterTzeit() {
+            if (!gameState.zmanim.tzeit) {
+                console.log('[Tzeit Debug] No tzeit time available yet');
+                return false;
+            }
+
+            const now = new Date();
+            const isAfter = now >= gameState.zmanim.tzeit;
+
+            console.log('[Tzeit Debug]', {
+                now: now.toLocaleString('he-IL'),
+                tzeit: gameState.zmanim.tzeit.toLocaleString('he-IL'),
+                isAfter: isAfter,
+                minutesUntilTzeit: Math.round((gameState.zmanim.tzeit - now) / 60000)
+            });
+
+            return isAfter;
+        }
+
+        // Calculate current Omer day (accounting for Hebrew calendar day starting at nightfall)
         function getCurrentOmerDay() {
             const start = new Date(gameState.sharedState.omerStartDate);
-            const today = new Date();
+            let today = new Date();
+
+            // If after tzeit, we're already in tomorrow's Hebrew day
+            if (isAfterTzeit()) {
+                today.setDate(today.getDate() + 1);
+            }
+
             today.setHours(0, 0, 0, 0);
             start.setHours(0, 0, 0, 0);
 
@@ -1246,10 +1320,31 @@
             return diffDays + 1; // Day 1 is the start date
         }
 
+        // Update tzeit debug display
+        function updateTzeitDebug() {
+            const debugDiv = document.getElementById('tzeitDebug');
+            if (!debugDiv) return;
+
+            if (gameState.zmanim.tzeit) {
+                const now = new Date();
+                const tzeit = gameState.zmanim.tzeit;
+                const isAfter = isAfterTzeit();
+
+                debugDiv.textContent = `צאת הכוכבים: ${tzeit.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })} | ` +
+                                      `עכשיו: ${now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })} | ` +
+                                      `${isAfter ? '✅ אחרי צאת' : '⏳ לפני צאת'}`;
+            } else {
+                debugDiv.textContent = 'טוען זמני יום...';
+            }
+        }
+
         // Update header subtitle with today's info
         function updateHeaderSubtitle() {
             const subtitle = document.getElementById('headerSubtitle');
             const currentDay = getCurrentOmerDay();
+            const afterTzeit = isAfterTzeit();
+
+            updateTzeitDebug();
 
             if (currentDay < 1) {
                 // Before Omer starts
@@ -1265,7 +1360,8 @@
                 const hebrewDate = getHebrewOmerDate(currentDay);
                 const gregorianDate = getGregorianOmerDate(currentDay);
                 const weekDay = getWeekDayBadge(currentDay);
-                subtitle.textContent = `היום יום ${currentDay} לעומר (${weekDay}) - ${hebrewDate} | ${gregorianDate}`;
+                const prefix = afterTzeit ? 'הלילה' : 'היום';
+                subtitle.textContent = `${prefix} יום ${currentDay} לעומר (${weekDay}) - ${hebrewDate} | ${gregorianDate}`;
             }
         }
 
@@ -1724,6 +1820,14 @@
                     hideLoading();
                 });
             }, gameState.settings.autoSyncInterval);
+
+            // Also refresh zmanim every hour
+            setInterval(async () => {
+                await fetchZmanim();
+                renderCalendar(); // Re-render to update "today" highlighting
+                updateHeaderSubtitle();
+                updateCheckinButton();
+            }, 3600000); // 1 hour
         }
 
         // Initialize on load

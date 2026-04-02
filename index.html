@@ -1172,31 +1172,12 @@
             closeModal('playerSelectionModal');
             showPlayerInfo();
 
-            // Reload data for this player
+            // Reload data for this player (use cached data)
             renderCalendar();
+            updatePlayerEmojis();
             updateCheckinButton();
 
-            showLoading();
-            syncFromSheets().then(() => {
-                // Update current player data from sheets
-                const sheetPlayer = gameState.sharedState.players.find(p => p.name === player.name);
-                if (sheetPlayer) {
-                    gameState.currentPlayer.checkins = sheetPlayer.checkins || [];
-
-                    // Update in local players list too
-                    const localIndex = gameState.localPlayers.findIndex(p => p.name === player.name);
-                    if (localIndex !== -1) {
-                        gameState.localPlayers[localIndex].checkins = sheetPlayer.checkins || [];
-                    }
-
-                    saveToLocalStorage();
-                }
-                updatePlayerEmojis();
-                updateCheckinButton();
-                hideLoading();
-            }).catch(() => {
-                hideLoading();
-            });
+            // Auto-sync will update in the background (every 60 seconds)
         }
 
         // Calculate current Omer day

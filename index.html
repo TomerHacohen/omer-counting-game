@@ -773,13 +773,13 @@
             <div class="modal-header">
                 <h2>ברכת ספירת העומר 🙏</h2>
             </div>
-            <div class="omer-count" id="omerCountText"></div>
             <div class="blessing-text">
                 <p>בָּרוּךְ אַתָּה יְיָ אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם</p>
                 <p>אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו וְצִוָּנוּ</p>
                 <p><strong>עַל סְפִירַת הָעֹמֶר</strong></p>
             </div>
-            <button class="btn-primary" onclick="confirmBlessing()">אישור - בירכתי! ✅</button>
+            <div class="omer-count" id="omerCountText"></div>
+            <button class="btn-primary" id="blessingConfirmBtn" onclick="confirmBlessing()">הנני מוכן ומזומן! ✅</button>
         </div>
     </div>
 
@@ -1362,6 +1362,15 @@
 
             const omerText = getOmerCountText(currentDay);
             document.getElementById('omerCountText').textContent = omerText;
+
+            // Set gender-aware button text
+            const confirmBtn = document.getElementById('blessingConfirmBtn');
+            if (gameState.currentPlayer.gender === 'female') {
+                confirmBtn.textContent = 'הנני מוכנה ומזומנה! ✅';
+            } else {
+                confirmBtn.textContent = 'הנני מוכן ומזומן! ✅';
+            }
+
             openModal('blessingModal');
         }
 

@@ -465,6 +465,70 @@
             font-size: 1em;
         }
 
+        .local-player-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .local-player-item:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+            transform: translateX(-5px);
+        }
+
+        .local-player-item.current {
+            background: #e7f5ff;
+            border-color: #667eea;
+        }
+
+        .local-player-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .local-player-emoji {
+            font-size: 2em;
+        }
+
+        .local-player-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .local-player-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .local-player-stats {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c00;
+            padding: 10px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #fcc;
+            display: none;
+        }
+
+        .error-message.active {
+            display: block;
+        }
+
         .tooltip {
             position: absolute;
             background: rgba(0,0,0,0.8);
@@ -650,6 +714,18 @@
         </div>
     </div>
 
+    <!-- Player Selection Modal -->
+    <div class="modal" id="playerSelectionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>בחר שחקן 👥</h2>
+                <p>שחקנים שמורים במכשיר זה</p>
+            </div>
+            <div id="localPlayersList" style="margin-bottom: 20px;"></div>
+            <button class="btn-primary" onclick="showWelcomeModal()">➕ הוסף שחקן חדש</button>
+        </div>
+    </div>
+
     <!-- Welcome Modal -->
     <div class="modal" id="welcomeModal">
         <div class="modal-content">
@@ -657,6 +733,7 @@
                 <h2>ברוכים הבאים! 🌾</h2>
                 <p>הצטרפו למשחק ספירת העומר המשפחתי</p>
             </div>
+            <div class="error-message" id="registrationError"></div>
             <form onsubmit="registerPlayer(event)">
                 <div class="form-group">
                     <label>השם שלך:</label>
@@ -745,6 +822,7 @@
         // Game state
         const gameState = {
             currentPlayer: null,
+            localPlayers: [], // All players who have used this browser
             sharedState: {
                 players: [],
                 omerStartDate: '2026-04-03', // April 3, 2026
@@ -786,7 +864,12 @@
             renderEmojiPicker();
 
             if (!gameState.currentPlayer) {
-                openModal('welcomeModal');
+                // Show player selection if we have local players, otherwise show welcome
+                if (gameState.localPlayers.length > 0) {
+                    showPlayerSelectionModal();
+                } else {
+                    openModal('welcomeModal');
+                }
             } else {
                 showPlayerInfo();
                 // Render calendar immediately (without player data)
@@ -796,7 +879,25 @@
                 // Then fetch and update player data
                 showLoading();
                 syncFromSheets().then(() => {
+                    // Update current player from sheets
+                    const sheetPlayer = gameState.sharedState.players.find(
+                        p => p.name === gameState.currentPlayer.name
+                    );
+                    if (sheetPlayer) {
+                        gameState.currentPlayer.checkins = sheetPlayer.checkins || [];
+
+                        // Update in local players list too
+                        const localIndex = gameState.localPlayers.findIndex(
+                            p => p.name === gameState.currentPlayer.name
+                        );
+                        if (localIndex !== -1) {
+                            gameState.localPlayers[localIndex].checkins = sheetPlayer.checkins || [];
+                        }
+
+                        saveToLocalStorage();
+                    }
                     updatePlayerEmojis();
+                    updateCheckinButton();
                     hideLoading();
                 }).catch(() => {
                     hideLoading();
@@ -812,6 +913,7 @@
             if (saved) {
                 const data = JSON.parse(saved);
                 gameState.currentPlayer = data.currentPlayer;
+                gameState.localPlayers = data.localPlayers || [];
                 gameState.settings = data.settings || gameState.settings;
 
                 // If no saved Apps Script URL, use the hardcoded one
@@ -828,6 +930,7 @@
         function saveToLocalStorage() {
             localStorage.setItem('omerGameState', JSON.stringify({
                 currentPlayer: gameState.currentPlayer,
+                localPlayers: gameState.localPlayers,
                 settings: gameState.settings
             }));
         }
@@ -886,40 +989,77 @@
         }
 
         // Register player
-        function registerPlayer(event) {
+        async function registerPlayer(event) {
             event.preventDefault();
 
             const name = document.getElementById('playerName').value.trim();
             const gender = document.getElementById('playerGender').value;
             const emoji = document.getElementById('selectedEmoji').value;
 
-            gameState.currentPlayer = {
-                name: name,
-                gender: gender,
-                emoji: emoji,
-                checkins: []
-            };
+            // Validate name uniqueness
+            const errorDiv = document.getElementById('registrationError');
+            errorDiv.classList.remove('active');
 
-            saveToLocalStorage();
-            closeModal('welcomeModal');
-            showPlayerInfo();
-
-            // Render calendar immediately
-            renderCalendar();
-            updateCheckinButton();
-
-            // Sync data in background
+            // Check against Google Sheets
             showLoading();
-            syncToSheets().then(() => {
-                return syncFromSheets();
-            }).then(() => {
-                updatePlayerEmojis();
+            try {
+                await syncFromSheets();
+
+                const existingPlayer = gameState.sharedState.players.find(
+                    p => p.name.toLowerCase() === name.toLowerCase()
+                );
+
+                if (existingPlayer) {
+                    errorDiv.textContent = `השם "${name}" כבר קיים במשחק. אנא בחר שם אחר.`;
+                    errorDiv.classList.add('active');
+                    hideLoading();
+                    return;
+                }
+
+                // Create new player
+                const newPlayer = {
+                    name: name,
+                    gender: gender,
+                    emoji: emoji,
+                    checkins: []
+                };
+
+                gameState.currentPlayer = newPlayer;
+
+                // Add to local players list if not already there
+                const localPlayerIndex = gameState.localPlayers.findIndex(p => p.name === name);
+                if (localPlayerIndex === -1) {
+                    gameState.localPlayers.push(newPlayer);
+                } else {
+                    gameState.localPlayers[localPlayerIndex] = newPlayer;
+                }
+
+                saveToLocalStorage();
+                closeModal('welcomeModal');
+                showPlayerInfo();
+
+                // Render calendar immediately
+                renderCalendar();
+                updateCheckinButton();
+
+                // Sync data in background
+                syncToSheets().then(() => {
+                    return syncFromSheets();
+                }).then(() => {
+                    updatePlayerEmojis();
+                    hideLoading();
+                    startAutoSync();
+                }).catch(() => {
+                    hideLoading();
+                    startAutoSync();
+                });
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                errorDiv.textContent = 'שגיאה בבדיקת השם. נסה שוב.';
+                errorDiv.classList.add('active');
                 hideLoading();
-                startAutoSync();
-            }).catch(() => {
-                hideLoading();
-                startAutoSync();
-            });
+            }
         }
 
         // Modal functions
@@ -947,12 +1087,116 @@
         }
 
         function changePlayer() {
-            if (confirm('האם אתה בטוח שברצונך להחליף שחקן? (המידע הנוכחי יישמר)')) {
-                gameState.currentPlayer = null;
-                saveToLocalStorage();
-                closeSettings();
-                location.reload();
+            closeSettings();
+            if (gameState.localPlayers.length > 0) {
+                showPlayerSelectionModal();
+            } else {
+                showWelcomeModal();
             }
+        }
+
+        function showPlayerSelectionModal() {
+            renderLocalPlayersList();
+            openModal('playerSelectionModal');
+        }
+
+        function showWelcomeModal() {
+            closeModal('playerSelectionModal');
+            // Clear error message
+            document.getElementById('registrationError').classList.remove('active');
+            // Clear form
+            document.getElementById('playerName').value = '';
+            openModal('welcomeModal');
+        }
+
+        function renderLocalPlayersList() {
+            const listDiv = document.getElementById('localPlayersList');
+            listDiv.innerHTML = '';
+
+            if (gameState.localPlayers.length === 0) {
+                listDiv.innerHTML = '<p style="text-align: center; color: #666;">אין שחקנים שמורים במכשיר זה</p>';
+                return;
+            }
+
+            gameState.localPlayers.forEach(player => {
+                const item = document.createElement('div');
+                item.className = 'local-player-item';
+                if (gameState.currentPlayer && gameState.currentPlayer.name === player.name) {
+                    item.classList.add('current');
+                }
+
+                const info = document.createElement('div');
+                info.className = 'local-player-info';
+
+                const emoji = document.createElement('div');
+                emoji.className = 'local-player-emoji';
+                emoji.textContent = player.emoji;
+
+                const details = document.createElement('div');
+                details.className = 'local-player-details';
+
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'local-player-name';
+                nameDiv.textContent = player.name;
+
+                const statsDiv = document.createElement('div');
+                statsDiv.className = 'local-player-stats';
+                const checkinCount = player.checkins ? player.checkins.length : 0;
+                statsDiv.textContent = `${checkinCount} ימים נספרו`;
+
+                details.appendChild(nameDiv);
+                details.appendChild(statsDiv);
+
+                info.appendChild(emoji);
+                info.appendChild(details);
+
+                item.appendChild(info);
+
+                if (gameState.currentPlayer && gameState.currentPlayer.name === player.name) {
+                    const badge = document.createElement('span');
+                    badge.textContent = '✓ פעיל';
+                    badge.style.color = '#667eea';
+                    badge.style.fontWeight = 'bold';
+                    item.appendChild(badge);
+                }
+
+                item.onclick = () => selectLocalPlayer(player);
+
+                listDiv.appendChild(item);
+            });
+        }
+
+        function selectLocalPlayer(player) {
+            gameState.currentPlayer = player;
+            saveToLocalStorage();
+            closeModal('playerSelectionModal');
+            showPlayerInfo();
+
+            // Reload data for this player
+            renderCalendar();
+            updateCheckinButton();
+
+            showLoading();
+            syncFromSheets().then(() => {
+                // Update current player data from sheets
+                const sheetPlayer = gameState.sharedState.players.find(p => p.name === player.name);
+                if (sheetPlayer) {
+                    gameState.currentPlayer.checkins = sheetPlayer.checkins || [];
+
+                    // Update in local players list too
+                    const localIndex = gameState.localPlayers.findIndex(p => p.name === player.name);
+                    if (localIndex !== -1) {
+                        gameState.localPlayers[localIndex].checkins = sheetPlayer.checkins || [];
+                    }
+
+                    saveToLocalStorage();
+                }
+                updatePlayerEmojis();
+                updateCheckinButton();
+                hideLoading();
+            }).catch(() => {
+                hideLoading();
+            });
         }
 
         // Calculate current Omer day
@@ -1204,6 +1448,15 @@
             }
 
             gameState.currentPlayer.checkins.push(currentDay);
+
+            // Update in local players list too
+            const localIndex = gameState.localPlayers.findIndex(
+                p => p.name === gameState.currentPlayer.name
+            );
+            if (localIndex !== -1) {
+                gameState.localPlayers[localIndex].checkins = gameState.currentPlayer.checkins;
+            }
+
             saveToLocalStorage();
 
             closeBlessingModal();

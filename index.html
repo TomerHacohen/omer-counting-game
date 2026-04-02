@@ -1359,11 +1359,15 @@
                 subtitle.textContent = 'ספירת העומר הסתיימה! חג שבועות שמח! 🎉';
             } else {
                 // During Omer
+                const omerText = getOmerCountText(currentDay);
                 const hebrewDate = getHebrewOmerDate(currentDay);
                 const gregorianDate = getGregorianOmerDate(currentDay);
                 const weekDay = getWeekDayBadge(currentDay);
-                const prefix = afterTzeit ? 'הלילה' : 'היום';
-                subtitle.textContent = `${prefix} יום ${currentDay} לעומר (${weekDay}) - ${hebrewDate} | ${gregorianDate}`;
+
+                // Replace היום with הלילה if after tzeit
+                const displayText = afterTzeit ? omerText.replace('הַיּוֹם', 'הַלַּיְלָה') : omerText;
+
+                subtitle.textContent = `${displayText} (${weekDay}) - ${hebrewDate} | ${gregorianDate}`;
             }
         }
 
@@ -1575,51 +1579,51 @@
             const days = day % 7;
 
             if (day === 1) {
-                return 'היום יום אחד לעומר';
+                return 'הַיּוֹם יוֹם אֶחָד לָעוֹמֶר';
             }
 
             if (day < 7) {
-                return `היום ${getHebrewNumber(day)} ימים לעומר`;
+                return `הַיּוֹם ${getHebrewNumber(day)} יָמִים לָעוֹמֶר`;
             }
 
-            let text = 'היום ';
+            let text = 'הַיּוֹם ';
 
             if (weeks > 0) {
                 if (weeks === 1) {
-                    text += 'שבוע אחד';
+                    text += 'שָׁבוּעַ אֶחָד';
                 } else {
-                    text += `${getHebrewNumber(weeks)} שבועות`;
+                    text += `${getHebrewNumber(weeks)} שָׁבוּעוֹת`;
                 }
             }
 
             if (days > 0) {
                 if (weeks > 0) {
-                    text += ' ו';
+                    text += ' וְ';
                 }
                 if (days === 1) {
-                    text += 'יום אחד';
+                    text += 'יוֹם אֶחָד';
                 } else {
-                    text += `${getHebrewNumber(days)} ימים`;
+                    text += `${getHebrewNumber(days)} יָמִים`;
                 }
             }
 
-            text += ' לעומר';
+            text += ' לָעוֹמֶר';
             return text;
         }
 
         function getHebrewNumber(num) {
-            const ones = ['', 'אחד', 'שניים', 'שלושה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה', 'שִׁבְעָה', 'שְׁמוֹנָה', 'תִּשְׁעָה'];
-            const tens = ['', '', 'עֶשְׂרִים', 'שְׁלוֹשִׁים', 'אַרְבָּעִים'];
+            const ones = ['', 'אֶחָד', 'שְׁנֵי', 'שְׁלֹשָׁה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה', 'שִׁבְעָה', 'שְׁמוֹנָה', 'תִּשְׁעָה'];
+            const tens = ['', '', 'עֶשְׂרִים', 'שְׁלֹשִׁים', 'אַרְבָּעִים'];
 
             if (num < 10) return ones[num];
             if (num < 20) {
-                const special = ['עֲשָׂרָה', 'אַחַד עָשָׂר', 'שְׁנֵים עָשָׂר', 'שְׁלוֹשָׁה עָשָׂר', 'אַרְבָּעָה עָשָׂר', 'חֲמִשָּׁה עָשָׂר', 'שִׁשָּׁה עָשָׂר', 'שִׁבְעָה עָשָׂר', 'שְׁמוֹנָה עָשָׂר', 'תִּשְׁעָה עָשָׂר'];
+                const special = ['עֲשָׂרָה', 'אַחַד עָשָׂר', 'שְׁנֵים עָשָׂר', 'שְׁלֹשָׁה עָשָׂר', 'אַרְבָּעָה עָשָׂר', 'חֲמִשָּׁה עָשָׂר', 'שִׁשָּׁה עָשָׂר', 'שִׁבְעָה עָשָׂר', 'שְׁמוֹנָה עָשָׂר', 'תִּשְׁעָה עָשָׂר'];
                 return special[num - 10];
             }
 
             const ten = Math.floor(num / 10);
             const one = num % 10;
-            return ones[one] ? `${ones[one]} ו${tens[ten]}` : tens[ten];
+            return ones[one] ? `${ones[one]} וָ${tens[ten]}` : tens[ten];
         }
 
         async function confirmBlessing() {
@@ -1830,6 +1834,12 @@
                 updateHeaderSubtitle();
                 updateCheckinButton();
             }, 3600000); // 1 hour
+
+            // Check every minute if we've passed tzeit and update header
+            setInterval(() => {
+                updateHeaderSubtitle();
+                updateCheckinButton();
+            }, 60000); // 1 minute
         }
 
         // Initialize on load

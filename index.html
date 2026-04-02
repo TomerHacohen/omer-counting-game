@@ -691,7 +691,7 @@
     <div class="container">
         <div class="header">
             <h1>משחק ספירת העומר 🌾</h1>
-            <p class="subtitle">מחר היא היום הראשון של ספירת העומר - 16 ניסן 5786</p>
+            <p class="subtitle" id="headerSubtitle">טוען...</p>
             <button class="settings-btn" onclick="openSettings()">⚙️ הגדרות</button>
         </div>
 
@@ -706,7 +706,6 @@
         <div class="calendar-container">
             <div class="calendar-header">
                 <h2>לוח ספירת העומר</h2>
-                <p>49 ימים מפסח ועד שבועות</p>
             </div>
             <div class="week-labels">
                 <div class="week-label">ראשון</div>
@@ -869,6 +868,7 @@
         function init() {
             loadFromLocalStorage();
             renderEmojiPicker();
+            updateHeaderSubtitle();
 
             if (!gameState.currentPlayer) {
                 // Show player selection if we have local players, otherwise show welcome
@@ -1216,6 +1216,29 @@
             const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
             return diffDays + 1; // Day 1 is the start date
+        }
+
+        // Update header subtitle with today's info
+        function updateHeaderSubtitle() {
+            const subtitle = document.getElementById('headerSubtitle');
+            const currentDay = getCurrentOmerDay();
+
+            if (currentDay < 1) {
+                // Before Omer starts
+                const daysUntil = Math.abs(currentDay - 1);
+                const startHebrew = getHebrewOmerDate(1);
+                const startGregorian = getGregorianOmerDate(1);
+                subtitle.textContent = `ספירת העומר מתחילה בעוד ${daysUntil} ${daysUntil === 1 ? 'יום' : 'ימים'} - ${startHebrew} (${startGregorian})`;
+            } else if (currentDay > 49) {
+                // After Omer ends
+                subtitle.textContent = 'ספירת העומר הסתיימה! חג שבועות שמח! 🎉';
+            } else {
+                // During Omer
+                const hebrewDate = getHebrewOmerDate(currentDay);
+                const gregorianDate = getGregorianOmerDate(currentDay);
+                const weekDay = getWeekDayBadge(currentDay);
+                subtitle.textContent = `היום יום ${currentDay} לעומר (${weekDay}) - ${hebrewDate} | ${gregorianDate}`;
+            }
         }
 
         // Calculate Hebrew date

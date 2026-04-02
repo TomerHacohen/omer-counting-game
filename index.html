@@ -809,15 +809,19 @@
         <div class="modal-content">
             <button class="modal-close" onclick="closeBlessingModal()">✖</button>
             <div class="modal-header">
-                <h2>ברכת ספירת העומר 🙏</h2>
+                <h2 id="blessingModalTitle">ברכת ספירת העומר 🙏</h2>
             </div>
-            <div class="blessing-text">
+            <div class="blessing-text" id="blessingText">
                 <p>בָּרוּךְ אַתָּה יְיָ אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם</p>
                 <p>אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו וְצִוָּנוּ</p>
                 <p><strong>עַל סְפִירַת הָעֹמֶר</strong></p>
             </div>
+            <div class="blessing-text" id="withoutBrachaNote" style="display: none; background: #fff3cd; border: 2px solid #ffc107;">
+                <p style="color: #856404; font-weight: bold;">⚠️ ספירה ללא ברכה</p>
+                <p style="color: #856404;">כיוון שפספסת יום, נהוג לספור ללא ברכה</p>
+            </div>
             <div class="omer-count" id="omerCountText"></div>
-            <button class="btn-primary" onclick="confirmBlessing()">אישור - בירכתי! ✅</button>
+            <button class="btn-primary" id="confirmBlessingBtn" onclick="confirmBlessing()">אישור - בירכתי! ✅</button>
         </div>
     </div>
 
@@ -1545,6 +1549,22 @@
             setTimeout(() => tooltip.remove(), 2000);
         }
 
+        // Check if player has missed any days
+        function hasMissedDays(currentDay) {
+            if (!gameState.currentPlayer.checkins || gameState.currentPlayer.checkins.length === 0) {
+                return false; // First time checking in
+            }
+
+            // Check if there are any gaps in the checkins before today
+            for (let day = 1; day < currentDay; day++) {
+                if (!gameState.currentPlayer.checkins.includes(day)) {
+                    return true; // Found a missed day
+                }
+            }
+
+            return false;
+        }
+
         // Check-in functions
         function openBlessingModal() {
             const currentDay = getCurrentOmerDay();
@@ -1567,7 +1587,35 @@
             const omerText = getOmerCountText(currentDay);
             document.getElementById('omerCountText').textContent = omerText;
 
+            // Check for missed days - if yes, show without blessing
+            if (hasMissedDays(currentDay)) {
+                // Update modal for counting without blessing
+                document.getElementById('blessingModalTitle').textContent = 'ספירת העומר (ללא ברכה)';
+                document.getElementById('blessingText').style.display = 'none';
+                document.getElementById('withoutBrachaNote').style.display = 'block';
+                document.getElementById('confirmBlessingBtn').textContent = 'אישור - ספרתי! ✅';
+                document.getElementById('blessingModal').dataset.withoutBracha = 'true';
+            } else {
+                // Reset modal to default state (with blessing)
+                document.getElementById('blessingModalTitle').textContent = 'ברכת ספירת העומר 🙏';
+                document.getElementById('blessingText').style.display = 'block';
+                document.getElementById('withoutBrachaNote').style.display = 'none';
+                document.getElementById('confirmBlessingBtn').textContent = 'אישור - בירכתי! ✅';
+                document.getElementById('blessingModal').dataset.withoutBracha = 'false';
+            }
+
             openModal('blessingModal');
+        }
+
+        function closeBlessingModal() {
+            // Reset modal to default state
+            document.getElementById('blessingModalTitle').textContent = 'ברכת ספירת העומר 🙏';
+            document.getElementById('blessingText').style.display = 'block';
+            document.getElementById('withoutBrachaNote').style.display = 'none';
+            document.getElementById('confirmBlessingBtn').textContent = 'אישור - בירכתי! ✅';
+            document.getElementById('blessingModal').dataset.withoutBracha = 'false';
+
+            closeModal('blessingModal');
         }
 
         function closeBlessingModal() {

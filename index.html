@@ -786,7 +786,7 @@
                 <p><strong>עַל סְפִירַת הָעֹמֶר</strong></p>
             </div>
             <div class="omer-count" id="omerCountText"></div>
-            <button class="btn-primary" id="blessingConfirmBtn" onclick="confirmBlessing()">הנני מוכן ומזומן! ✅</button>
+            <button class="btn-primary" onclick="confirmBlessing()">אישור - בירכתי! ✅</button>
         </div>
     </div>
 
@@ -947,6 +947,24 @@
             document.getElementById('playerInfo').style.display = 'flex';
             document.getElementById('currentPlayerEmoji').textContent = gameState.currentPlayer.emoji;
             document.getElementById('currentPlayerName').textContent = gameState.currentPlayer.name;
+
+            // Set gender-aware check-in button text
+            updateCheckinButtonText();
+        }
+
+        // Update check-in button text based on gender
+        function updateCheckinButtonText() {
+            const btn = document.getElementById('checkinBtn');
+            if (gameState.currentPlayer.gender === 'female') {
+                btn.dataset.activeText = 'הנני מוכנה ומזומנה! 🙏';
+            } else {
+                btn.dataset.activeText = 'הנני מוכן ומזומן! 🙏';
+            }
+
+            // Apply the text if button is currently enabled
+            if (!btn.disabled) {
+                btn.textContent = btn.dataset.activeText;
+            }
         }
 
         // Render emoji picker
@@ -1396,14 +1414,6 @@
             const omerText = getOmerCountText(currentDay);
             document.getElementById('omerCountText').textContent = omerText;
 
-            // Set gender-aware button text
-            const confirmBtn = document.getElementById('blessingConfirmBtn');
-            if (gameState.currentPlayer.gender === 'female') {
-                confirmBtn.textContent = 'הנני מוכנה ומזומנה! ✅';
-            } else {
-                confirmBtn.textContent = 'הנני מוכן ומזומן! ✅';
-            }
-
             openModal('blessingModal');
         }
 
@@ -1575,6 +1585,11 @@
             const btn = document.getElementById('checkinBtn');
             const currentDay = getCurrentOmerDay();
 
+            // Ensure gender-aware text is set
+            if (!btn.dataset.activeText) {
+                updateCheckinButtonText();
+            }
+
             if (currentDay < 1 || currentDay > 49) {
                 btn.disabled = true;
                 btn.textContent = 'ספירת העומר לא פעילה';
@@ -1586,7 +1601,7 @@
                 btn.textContent = '✅ בירכתי היום!';
             } else {
                 btn.disabled = false;
-                btn.textContent = 'בירכתי! 🙏';
+                btn.textContent = btn.dataset.activeText;
             }
         }
 

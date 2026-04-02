@@ -135,7 +135,7 @@
             border: 2px solid #dee2e6;
             border-radius: 10px;
             padding: 10px;
-            min-height: 80px;
+            min-height: 90px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -160,17 +160,20 @@
             box-shadow: 0 0 0 3px rgba(255,193,7,0.3);
         }
 
-        .day-number {
-            font-weight: bold;
+        .day-info {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.75em;
             color: #333;
-            font-size: 0.9em;
-            margin-bottom: 5px;
+            text-align: right;
+            line-height: 1.3;
+            font-weight: normal;
         }
 
-        .hebrew-date {
-            font-size: 0.7em;
-            color: #666;
-            margin-bottom: 5px;
+        .day-info strong {
+            font-weight: bold;
+            font-size: 1.1em;
         }
 
         .week-badge {
@@ -182,24 +185,26 @@
             border-radius: 5px;
             font-size: 0.7em;
             color: #666;
+            font-weight: bold;
         }
 
         .players-in-cell {
             display: flex;
             flex-wrap: wrap;
-            gap: 5px;
+            gap: 3px;
             justify-content: center;
             margin-top: auto;
+            padding-top: 25px;
         }
 
         .player-emoji-small {
-            font-size: 1.5em;
+            font-size: 1.2em;
             cursor: pointer;
             transition: transform 0.2s;
         }
 
         .player-emoji-small:hover {
-            transform: scale(1.3);
+            transform: scale(1.4);
         }
 
         /* Subtle theme tints for different weeks */
@@ -639,17 +644,19 @@
             }
 
             .day-cell {
-                min-height: 50px;
+                min-height: 60px;
                 padding: 5px;
                 font-size: 0.85em;
             }
 
-            .day-number {
-                font-size: 0.8em;
+            .players-in-cell {
+                padding-top: 20px;
             }
 
-            .hebrew-date {
+            .day-info {
                 font-size: 0.6em;
+                top: 3px;
+                right: 3px;
             }
 
             .week-badge {
@@ -657,7 +664,7 @@
             }
 
             .player-emoji-small {
-                font-size: 1em;
+                font-size: 0.9em;
             }
 
             .emoji-grid {
@@ -1204,6 +1211,37 @@
             }
         }
 
+        // Calculate Gregorian date
+        function getGregorianOmerDate(omerDay) {
+            const startDate = new Date(gameState.sharedState.omerStartDate);
+            const targetDate = new Date(startDate);
+            targetDate.setDate(startDate.getDate() + omerDay - 1);
+
+            const day = targetDate.getDate();
+            const month = targetDate.getMonth() + 1;
+            return `${day}/${month}`;
+        }
+
+        // Get week and day badge (e.g., "ש1י2" for week 1 day 2, "ש7" for day 49)
+        function getWeekDayBadge(omerDay) {
+            const weeks = Math.floor(omerDay / 7);
+            const days = omerDay % 7;
+
+            let badge = '';
+
+            // Add weeks part (omit if 0)
+            if (weeks > 0) {
+                badge += `ש${weeks}`;
+            }
+
+            // Add days part (omit if 0)
+            if (days > 0) {
+                badge += `י${days}`;
+            }
+
+            return badge;
+        }
+
         // Get week number for a day
         function getWeekNumber(day) {
             return Math.ceil(day / 7);
@@ -1273,24 +1311,19 @@
                             cell.classList.add('today');
                         }
 
-                        // Week badge
-                        const week = getWeekNumber(omerDay);
-                        const weekBadge = document.createElement('div');
-                        weekBadge.className = 'week-badge';
-                        weekBadge.textContent = `ש${week}`;
-                        cell.appendChild(weekBadge);
+                        // Week/Day badge
+                        const weekDayBadge = document.createElement('div');
+                        weekDayBadge.className = 'week-badge';
+                        weekDayBadge.textContent = getWeekDayBadge(omerDay);
+                        cell.appendChild(weekDayBadge);
 
-                        // Day number
-                        const dayNum = document.createElement('div');
-                        dayNum.className = 'day-number';
-                        dayNum.textContent = omerDay;
-                        cell.appendChild(dayNum);
-
-                        // Hebrew date
-                        const hebrewDate = document.createElement('div');
-                        hebrewDate.className = 'hebrew-date';
-                        hebrewDate.textContent = getHebrewOmerDate(omerDay);
-                        cell.appendChild(hebrewDate);
+                        // All info on one line: Day | Hebrew | Gregorian
+                        const dayInfo = document.createElement('div');
+                        dayInfo.className = 'day-info';
+                        const hebrewDate = getHebrewOmerDate(omerDay);
+                        const gregorianDate = getGregorianOmerDate(omerDay);
+                        dayInfo.innerHTML = `<strong>${omerDay}</strong> | ${hebrewDate} | ${gregorianDate}`;
+                        cell.appendChild(dayInfo);
 
                         // Empty players container (will be filled later)
                         const playersDiv = document.createElement('div');

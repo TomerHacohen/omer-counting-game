@@ -461,6 +461,9 @@
         }
 
         .settings-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
             background: rgba(255,255,255,0.3);
             color: white;
             border: none;
@@ -468,6 +471,29 @@
             border-radius: 10px;
             cursor: pointer;
             font-size: 1em;
+            z-index: 100;
+            transition: all 0.2s;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255,255,255,0.5);
+            transform: scale(1.05);
+        }
+
+        .change-player-btn {
+            background: rgba(102, 126, 234, 0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+
+        .change-player-btn:hover {
+            background: rgba(102, 126, 234, 0.4);
+            transform: scale(1.05);
         }
 
         .local-player-item {
@@ -689,16 +715,19 @@
 </head>
 <body>
     <div class="container">
+        <!-- Settings button (top-right corner) -->
+        <button class="settings-btn" onclick="openSettings()">⚙️</button>
+
         <div class="header">
             <h1>משחק ספירת העומר 🌾</h1>
             <p class="subtitle" id="headerSubtitle">טוען...</p>
-            <button class="settings-btn" onclick="openSettings()">⚙️ הגדרות</button>
         </div>
 
         <div class="player-info" id="playerInfo" style="display: none;">
             <div class="player-details">
                 <span class="player-emoji" id="currentPlayerEmoji"></span>
                 <span id="currentPlayerName"></span>
+                <button class="change-player-btn" onclick="changePlayer()">שנה שחקן</button>
             </div>
             <button class="checkin-btn" id="checkinBtn" onclick="openBlessingModal()">בירכתי! 🙏</button>
         </div>
@@ -803,7 +832,6 @@
                 </label>
             </div>
             <button class="btn-primary" onclick="saveSettings()">שמור הגדרות 💾</button>
-            <button class="btn-primary" onclick="changePlayer()" style="margin-top: 10px; background: #f5576c;">שנה שחקן 🔄</button>
         </div>
     </div>
 

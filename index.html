@@ -1,0 +1,1391 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>משחק ספירת העומר 🌾</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            direction: rtl;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .player-info {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .player-details {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.2em;
+        }
+
+        .player-emoji {
+            font-size: 2em;
+        }
+
+        .checkin-btn {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            color: white;
+            border: none;
+            padding: 20px 50px;
+            font-size: 1.5em;
+            border-radius: 15px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .checkin-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(17, 153, 142, 0.6);
+        }
+
+        .checkin-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .calendar-container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .calendar-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-header h2 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .week-labels {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+            direction: rtl;
+        }
+
+        .week-label {
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 10px;
+            direction: rtl;
+            min-height: 600px;
+        }
+
+        .day-cell {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            position: relative;
+            transition: all 0.2s;
+        }
+
+        .day-cell:hover {
+            transform: scale(1.02);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .day-cell.empty {
+            background: transparent;
+            border: 2px dashed #dee2e6;
+        }
+
+        .day-cell.today {
+            background: #fff3cd;
+            border: 3px solid #ffc107;
+            box-shadow: 0 0 0 3px rgba(255,193,7,0.3);
+        }
+
+        .day-number {
+            font-weight: bold;
+            color: #333;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+        }
+
+        .hebrew-date {
+            font-size: 0.7em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .week-badge {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            background: rgba(0,0,0,0.1);
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-size: 0.7em;
+            color: #666;
+        }
+
+        .players-in-cell {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            justify-content: center;
+            margin-top: auto;
+        }
+
+        .player-emoji-small {
+            font-size: 1.5em;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .player-emoji-small:hover {
+            transform: scale(1.3);
+        }
+
+        /* Subtle theme tints for different weeks */
+        .day-cell[data-week="1"] {
+            background: #e3f2fd;
+        }
+
+        .day-cell[data-week="2"] {
+            background: #f3e5f5;
+        }
+
+        .day-cell[data-week="3"] {
+            background: #fce4ec;
+        }
+
+        .day-cell[data-week="4"] {
+            background: #fff3e0;
+        }
+
+        .day-cell[data-week="5"] {
+            background: #e8f5e9;
+        }
+
+        .day-cell[data-week="6"] {
+            background: #e0f2f1;
+        }
+
+        .day-cell[data-week="7"] {
+            background: #f1f8e9;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            position: relative;
+            animation: slideIn 0.3s;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+            background: none;
+            border: none;
+            padding: 5px;
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.8em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            direction: rtl;
+        }
+
+        .gender-select {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .gender-option {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .gender-option.selected {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .emoji-picker {
+            margin: 20px 0;
+        }
+
+        .emoji-categories {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        .emoji-category-btn {
+            padding: 8px 15px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+
+        .emoji-category-btn.active {
+            border-color: #667eea;
+            background: #f0f0ff;
+        }
+
+        .emoji-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 10px;
+        }
+
+        .emoji-option {
+            font-size: 2em;
+            cursor: pointer;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+            transition: all 0.2s;
+        }
+
+        .emoji-option:hover {
+            background: #fff;
+            transform: scale(1.2);
+        }
+
+        .emoji-option.selected {
+            background: #667eea;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+        }
+
+        .blessing-text {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            line-height: 1.8;
+            font-size: 1.1em;
+        }
+
+        .omer-count {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        .congrats-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            z-index: 2000;
+            animation: blessingSuccess 0.5s;
+            display: none;
+        }
+
+        .congrats-message.active {
+            display: block;
+        }
+
+        .congrats-message h2 {
+            font-size: 2em;
+            color: #11998e;
+            margin-bottom: 15px;
+        }
+
+        .congrats-message p {
+            font-size: 1.3em;
+            color: #333;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #f00;
+            animation: confettiFall 3s linear forwards;
+            pointer-events: none;
+        }
+
+        .settings-btn {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            pointer-events: none;
+            z-index: 1000;
+            white-space: nowrap;
+        }
+
+        .loading-indicator {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255,255,255,0.95);
+            padding: 15px 30px;
+            border-radius: 30px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: none;
+            align-items: center;
+            gap: 15px;
+            z-index: 2000;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .loading-indicator.active {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes emojiEntry {
+            0% {
+                transform: scale(0) rotate(-180deg);
+                opacity: 0;
+            }
+            60% {
+                transform: scale(1.3) rotate(20deg);
+            }
+            100% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes blessingSuccess {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .emoji-animate {
+            animation: emojiEntry 0.6s ease-out;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .calendar-grid {
+                gap: 5px;
+                min-height: 500px;
+            }
+
+            .day-cell {
+                min-height: 50px;
+                padding: 5px;
+                font-size: 0.85em;
+            }
+
+            .day-number {
+                font-size: 0.8em;
+            }
+
+            .hebrew-date {
+                font-size: 0.6em;
+            }
+
+            .week-badge {
+                font-size: 0.6em;
+            }
+
+            .player-emoji-small {
+                font-size: 1em;
+            }
+
+            .emoji-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+
+            .player-info {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .week-label {
+                font-size: 0.7em;
+            }
+
+            .checkin-btn {
+                padding: 15px 30px;
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>משחק ספירת העומר 🌾</h1>
+            <p class="subtitle">מחר היא היום הראשון של ספירת העומר - 16 ניסן 5786</p>
+            <button class="settings-btn" onclick="openSettings()">⚙️ הגדרות</button>
+        </div>
+
+        <div class="player-info" id="playerInfo" style="display: none;">
+            <div class="player-details">
+                <span class="player-emoji" id="currentPlayerEmoji"></span>
+                <span id="currentPlayerName"></span>
+            </div>
+            <button class="checkin-btn" id="checkinBtn" onclick="openBlessingModal()">בירכתי! 🙏</button>
+        </div>
+
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <h2>לוח ספירת העומר</h2>
+                <p>49 ימים מפסח ועד שבועות</p>
+            </div>
+            <div class="week-labels">
+                <div class="week-label">ראשון</div>
+                <div class="week-label">שני</div>
+                <div class="week-label">שלישי</div>
+                <div class="week-label">רביעי</div>
+                <div class="week-label">חמישי</div>
+                <div class="week-label">שישי</div>
+                <div class="week-label">שבת</div>
+            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+    </div>
+
+    <!-- Welcome Modal -->
+    <div class="modal" id="welcomeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>ברוכים הבאים! 🌾</h2>
+                <p>הצטרפו למשחק ספירת העומר המשפחתי</p>
+            </div>
+            <form onsubmit="registerPlayer(event)">
+                <div class="form-group">
+                    <label>השם שלך:</label>
+                    <input type="text" id="playerName" required placeholder="הכנס את שמך">
+                </div>
+                <div class="form-group">
+                    <label>מין:</label>
+                    <div class="gender-select">
+                        <div class="gender-option" onclick="selectGender('male')">
+                            <div>👦</div>
+                            <div>זכר</div>
+                        </div>
+                        <div class="gender-option" onclick="selectGender('female')">
+                            <div>👧</div>
+                            <div>נקבה</div>
+                        </div>
+                    </div>
+                    <input type="hidden" id="playerGender" value="male">
+                </div>
+                <div class="form-group">
+                    <label>בחר אמוג'י:</label>
+                    <div class="emoji-picker">
+                        <div class="emoji-categories" id="emojiCategories"></div>
+                        <div class="emoji-grid" id="emojiGrid"></div>
+                    </div>
+                    <input type="hidden" id="selectedEmoji" value="😊">
+                </div>
+                <button type="submit" class="btn-primary">התחל לשחק! 🎮</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Blessing Modal -->
+    <div class="modal" id="blessingModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeBlessingModal()">✖</button>
+            <div class="modal-header">
+                <h2>ברכת ספירת העומר 🙏</h2>
+            </div>
+            <div class="omer-count" id="omerCountText"></div>
+            <div class="blessing-text">
+                <p>בָּרוּךְ אַתָּה יְיָ אֱלֹהֵינוּ מֶלֶךְ הָעוֹלָם</p>
+                <p>אֲשֶׁר קִדְּשָׁנוּ בְּמִצְוֹתָיו וְצִוָּנוּ</p>
+                <p><strong>עַל סְפִירַת הָעֹמֶר</strong></p>
+            </div>
+            <button class="btn-primary" onclick="confirmBlessing()">אישור - בירכתי! ✅</button>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeSettings()">✖</button>
+            <div class="modal-header">
+                <h2>הגדרות ⚙️</h2>
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="soundEnabled" checked>
+                    הפעל צלילים
+                </label>
+            </div>
+            <button class="btn-primary" onclick="saveSettings()">שמור הגדרות 💾</button>
+            <button class="btn-primary" onclick="changePlayer()" style="margin-top: 10px; background: #f5576c;">שנה שחקן 🔄</button>
+        </div>
+    </div>
+
+    <!-- Congratulations Message -->
+    <div class="congrats-message" id="congratsMessage">
+        <h2 id="congratsTitle"></h2>
+        <p id="congratsText"></p>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div class="loading-indicator" id="loadingIndicator">
+        <div class="spinner"></div>
+        <span>טוען נתונים...</span>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION - Set your Google Apps Script URL here
+        // ============================================
+        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw87ass6tz0wOAFM2nFWS5OH-tpX2itudGhfXqUwfx1MphM4Pnu8EirpYfviV60Wp9L/exec';
+
+        // Game state
+        const gameState = {
+            currentPlayer: null,
+            sharedState: {
+                players: [],
+                omerStartDate: '2026-04-03', // April 3, 2026
+                googleSheetsUrl: ''
+            },
+            settings: {
+                autoSyncInterval: 60000,
+                soundEnabled: true,
+                appsScriptUrl: GOOGLE_APPS_SCRIPT_URL
+            }
+        };
+
+        // Emoji categories - comprehensive list
+        const emojiCategories = {
+            'פרצופים': ['😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂', '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩', '😘', '😗', '😚', '😙', '🥲', '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔', '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '😮', '😯', '😲', '😳', '🥺', '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣', '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '😈', '👿', '💀', '☠️', '💩', '🤡', '👹', '👺', '👻', '👽', '👾', '🤖', '😺', '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾'],
+            'אנשים': ['👶', '👧', '🧒', '👦', '👩', '🧑', '👨', '👩‍🦱', '🧑‍🦱', '👨‍🦱', '👩‍🦰', '🧑‍🦰', '👨‍🦰', '👱‍♀️', '👱', '👱‍♂️', '👩‍🦳', '🧑‍🦳', '👨‍🦳', '👩‍🦲', '🧑‍🦲', '👨‍🦲', '🧔', '👵', '🧓', '👴', '👲', '👳‍♀️', '👳', '👳‍♂️', '🧕', '👮‍♀️', '👮', '👮‍♂️', '👷‍♀️', '👷', '👷‍♂️', '💂‍♀️', '💂', '💂‍♂️', '🕵️‍♀️', '🕵️', '🕵️‍♂️', '👩‍⚕️', '🧑‍⚕️', '👨‍⚕️', '👩‍🌾', '🧑‍🌾', '👨‍🌾', '👩‍🍳', '🧑‍🍳', '👨‍🍳', '👩‍🎓', '🧑‍🎓', '👨‍🎓', '👩‍🎤', '🧑‍🎤', '👨‍🎤', '👩‍🏫', '🧑‍🏫', '👨‍🏫', '👩‍🏭', '🧑‍🏭', '👨‍🏭', '👩‍💻', '🧑‍💻', '👨‍💻', '👩‍💼', '🧑‍💼', '👨‍💼', '👩‍🔧', '🧑‍🔧', '👨‍🔧', '👩‍🔬', '🧑‍🔬', '👨‍🔬', '👩‍🎨', '🧑‍🎨', '👨‍🎨', '👩‍🚒', '🧑‍🚒', '👨‍🚒', '👩‍✈️', '🧑‍✈️', '👨‍✈️', '👩‍🚀', '🧑‍🚀', '👨‍🚀', '👩‍⚖️', '🧑‍⚖️', '👨‍⚖️', '👰', '🤵', '👸', '🤴', '🥷', '🦸‍♀️', '🦸', '🦸‍♂️', '🦹‍♀️', '🦹', '🦹‍♂️', '🧙‍♀️', '🧙', '🧙‍♂️', '🧚‍♀️', '🧚', '🧚‍♂️', '🧛‍♀️', '🧛', '🧛‍♂️', '🧜‍♀️', '🧜', '🧜‍♂️', '🧝‍♀️', '🧝', '🧝‍♂️', '🧞‍♀️', '🧞', '🧞‍♂️', '🧟‍♀️', '🧟', '🧟‍♂️'],
+            'חיות': ['🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼', '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵', '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤', '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗', '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜', '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎', '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡', '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅', '🐆', '🦓', '🦍', '🦧', '🐘', '🦛', '🦏', '🐪', '🐫', '🦒', '🦘', '🐃', '🐂', '🐄', '🐎', '🐖', '🐏', '🐑', '🦙', '🐐', '🦌', '🐕', '🐩', '🦮', '🐕‍🦺', '🐈', '🐓', '🦃', '🦚', '🦜', '🦢', '🦩', '🕊️', '🐇', '🦝', '🦨', '🦡', '🦦', '🦥', '🐁', '🐀', '🐿️', '🦔'],
+            'אוכל': ['🍇', '🍈', '🍉', '🍊', '🍋', '🍌', '🍍', '🥭', '🍎', '🍏', '🍐', '🍑', '🍒', '🍓', '🫐', '🥝', '🍅', '🫒', '🥥', '🥑', '🍆', '🥔', '🥕', '🌽', '🌶️', '🫑', '🥒', '🥬', '🥦', '🧄', '🧅', '🍄', '🥜', '🌰', '🍞', '🥐', '🥖', '🫓', '🥨', '🥯', '🥞', '🧇', '🧀', '🍖', '🍗', '🥩', '🥓', '🍔', '🍟', '🍕', '🌭', '🥪', '🌮', '🌯', '🫔', '🥙', '🧆', '🥚', '🍳', '🥘', '🍲', '🫕', '🥣', '🥗', '🍿', '🧈', '🧂', '🥫', '🍱', '🍘', '🍙', '🍚', '🍛', '🍜', '🍝', '🍠', '🍢', '🍣', '🍤', '🍥', '🥮', '🍡', '🥟', '🥠', '🥡', '🦀', '🦞', '🦐', '🦑', '🦪', '🍦', '🍧', '🍨', '🍩', '🍪', '🎂', '🍰', '🧁', '🥧', '🍫', '🍬', '🍭', '🍮', '🍯', '🍼', '🥛', '☕', '🫖', '🍵', '🍶', '🍾', '🍷', '🍸', '🍹', '🍺', '🍻', '🥂', '🥃', '🥤', '🧋', '🧃', '🧉', '🧊'],
+            'ספורט': ['⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉', '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍', '🏏', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿', '🥊', '🥋', '🎽', '🛹', '🛼', '🛷', '⛸️', '🥌', '🎿', '⛷️', '🏂', '🪂', '🏋️‍♀️', '🏋️', '🏋️‍♂️', '🤼‍♀️', '🤼', '🤼‍♂️', '🤸‍♀️', '🤸', '🤸‍♂️', '⛹️‍♀️', '⛹️', '⛹️‍♂️', '🤺', '🤾‍♀️', '🤾', '🤾‍♂️', '🏌️‍♀️', '🏌️', '🏌️‍♂️', '🏇', '🧘‍♀️', '🧘', '🧘‍♂️', '🏄‍♀️', '🏄', '🏄‍♂️', '🏊‍♀️', '🏊', '🏊‍♂️', '🤽‍♀️', '🤽', '🤽‍♂️', '🚣‍♀️', '🚣', '🚣‍♂️', '🧗‍♀️', '🧗', '🧗‍♂️', '🚵‍♀️', '🚵', '🚵‍♂️', '🚴‍♀️', '🚴', '🚴‍♂️', '🏆', '🥇', '🥈', '🥉', '🏅', '🎖️', '🏵️', '🎗️', '🎫', '🎟️', '🎪', '🤹‍♀️', '🤹', '🤹‍♂️'],
+            'טבע': ['🌍', '🌎', '🌏', '🌐', '🗺️', '🗾', '🧭', '🏔️', '⛰️', '🌋', '🗻', '🏕️', '🏖️', '🏜️', '🏝️', '🏞️', '🏟️', '🏛️', '🏗️', '🧱', '🪨', '🪵', '🛖', '🏘️', '🏚️', '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨', '🏩', '🏪', '🏫', '🏬', '🏭', '🏯', '🏰', '💒', '🗼', '🗽', '⛪', '🕌', '🛕', '🕍', '⛩️', '🕋', '⛲', '⛺', '🌁', '🌃', '🏙️', '🌄', '🌅', '🌆', '🌇', '🌉', '♨️', '🎠', '🎡', '🎢', '💈', '🎪', '🚂', '🚃', '🚄', '🚅', '🚆', '🚇', '🚈', '🚉', '🚊', '🚝', '🚞', '🚋', '🚌', '🚍', '🚎', '🚐', '🚑', '🚒', '🚓', '🚔', '🚕', '🚖', '🚗', '🚘', '🚙', '🛻', '🚚', '🚛', '🚜', '🏎️', '🏍️', '🛵', '🦽', '🦼', '🛺', '🚲', '🛴', '🛹', '🛼', '🚏', '🛣️', '🛤️', '🛢️', '⛽', '🚨', '🚥', '🚦', '🛑', '🚧', '⚓', '⛵', '🛶', '🚤', '🛳️', '⛴️', '🛥️', '🚢', '✈️', '🛩️', '🛫', '🛬', '🪂', '💺', '🚁', '🚟', '🚠', '🚡', '🛰️', '🚀', '🛸'],
+            'צמחים': ['💐', '🌸', '💮', '🏵️', '🌹', '🥀', '🌺', '🌻', '🌼', '🌷', '🌱', '🪴', '🌲', '🌳', '🌴', '🌵', '🌾', '🌿', '☘️', '🍀', '🍁', '🍂', '🍃', '🪹', '🪺'],
+            'סמלים': ['❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍', '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖', '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️', '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️', '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️', '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹', '🈲', '🅰️', '🅱️', '🆎', '🆑', '🅾️', '🆘', '❌', '⭕', '🛑', '⛔', '📛', '🚫', '💯', '💢', '♨️', '🚷', '🚯', '🚳', '🚱', '🔞', '📵', '🚭', '❗', '❕', '❓', '❔', '‼️', '⁉️', '🔅', '🔆', '〽️', '⚠️', '🚸', '🔱', '⚜️', '🔰', '♻️', '✅', '🈯', '💹', '❇️', '✳️', '❎', '🌐', '💠', 'Ⓜ️', '🌀', '💤', '🏧', '🚾', '♿', '🅿️', '🛗', '🈳', '🈂️', '🛂', '🛃', '🛄', '🛅', '🚹', '🚺', '🚼', '⚧️', '🚻', '🚮', '🎦', '📶', '🈁', '🔣', 'ℹ️', '🔤', '🔡', '🔠', '🆖', '🆗', '🆙', '🆒', '🆕', '🆓', '0️⃣', '1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟', '🔢', '#️⃣', '*️⃣', '⏏️', '▶️', '⏸️', '⏯️', '⏹️', '⏺️', '⏭️', '⏮️', '⏩', '⏪', '⏫', '⏬', '◀️', '🔼', '🔽', '➡️', '⬅️', '⬆️', '⬇️', '↗️', '↘️', '↙️', '↖️', '↕️', '↔️', '↪️', '↩️', '⤴️', '⤵️', '🔀', '🔁', '🔂', '🔄', '🔃', '🎵', '🎶', '➕', '➖', '➗', '✖️', '🟰', '♾️', '💲', '💱', '™️', '©️', '®️', '〰️', '➰', '➿', '🔚', '🔙', '🔛', '🔝', '🔜', '✔️', '☑️', '🔘', '🔴', '🟠', '🟡', '🟢', '🔵', '🟣', '⚫', '⚪', '🟤', '🔺', '🔻', '🔸', '🔹', '🔶', '🔷', '🔳', '🔲', '▪️', '▫️', '◾', '◽', '◼️', '◻️', '🟥', '🟧', '🟨', '🟩', '🟦', '🟪', '⬛', '⬜', '🟫', '🔈', '🔇', '🔉', '🔊', '🔔', '🔕', '📣', '📢', '👁️‍🗨️', '💬', '💭', '🗯️', '♠️', '♣️', '♥️', '♦️', '🃏', '🎴', '🀄', '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🕙', '🕚', '🕛', '🕜', '🕝', '🕞', '🕟', '🕠', '🕡', '🕢', '🕣', '🕤', '🕥', '🕦', '🕧', '⭐', '🌟', '✨', '⚡', '☄️', '💥', '🔥', '🌈', '☀️', '🌤️', '⛅', '🌥️', '☁️', '🌦️', '🌧️', '⛈️', '🌩️', '🌨️', '❄️', '☃️', '⛄', '🌬️', '💨', '💧', '💦', '☔', '☂️', '🌊', '🌫️', '🌙', '🌛', '🌜', '🌚', '🌕', '🌖', '🌗', '🌘', '🌑', '🌒', '🌓', '🌔', '🌝', '🌞', '🪐', '⭐', '🌟', '🌠', '🌌', '☁️', '⛅', '⛈️', '🌤️', '🌥️', '🌦️', '🌧️', '🌨️', '🌩️', '🌪️', '🌫️', '🌬️', '🌀', '🌈', '🌂', '☂️', '☔', '⛱️', '⚡', '❄️', '☃️', '⛄', '☄️', '🔥', '💧', '🌊']
+        };
+
+        let syncInterval = null;
+
+        // Loading indicator functions
+        function showLoading() {
+            document.getElementById('loadingIndicator').classList.add('active');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingIndicator').classList.remove('active');
+        }
+
+        // Initialize game
+        function init() {
+            loadFromLocalStorage();
+            renderEmojiPicker();
+
+            if (!gameState.currentPlayer) {
+                openModal('welcomeModal');
+            } else {
+                showPlayerInfo();
+                // Render calendar immediately (without player data)
+                renderCalendar();
+                updateCheckinButton();
+
+                // Then fetch and update player data
+                showLoading();
+                syncFromSheets().then(() => {
+                    updatePlayerEmojis();
+                    hideLoading();
+                }).catch(() => {
+                    hideLoading();
+                });
+
+                startAutoSync();
+            }
+        }
+
+        // Load from localStorage
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('omerGameState');
+            if (saved) {
+                const data = JSON.parse(saved);
+                gameState.currentPlayer = data.currentPlayer;
+                gameState.settings = data.settings || gameState.settings;
+
+                // If no saved Apps Script URL, use the hardcoded one
+                if (!gameState.settings.appsScriptUrl) {
+                    gameState.settings.appsScriptUrl = GOOGLE_APPS_SCRIPT_URL;
+                }
+            } else {
+                // First time - use hardcoded URL
+                gameState.settings.appsScriptUrl = GOOGLE_APPS_SCRIPT_URL;
+            }
+        }
+
+        // Save to localStorage
+        function saveToLocalStorage() {
+            localStorage.setItem('omerGameState', JSON.stringify({
+                currentPlayer: gameState.currentPlayer,
+                settings: gameState.settings
+            }));
+        }
+
+        // Show player info
+        function showPlayerInfo() {
+            document.getElementById('playerInfo').style.display = 'flex';
+            document.getElementById('currentPlayerEmoji').textContent = gameState.currentPlayer.emoji;
+            document.getElementById('currentPlayerName').textContent = gameState.currentPlayer.name;
+        }
+
+        // Render emoji picker
+        function renderEmojiPicker() {
+            const categoriesDiv = document.getElementById('emojiCategories');
+            const gridDiv = document.getElementById('emojiGrid');
+
+            const categoryNames = Object.keys(emojiCategories);
+            categoryNames.forEach((category, index) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'emoji-category-btn' + (index === 0 ? ' active' : '');
+                btn.textContent = category;
+                btn.onclick = () => {
+                    document.querySelectorAll('.emoji-category-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    showEmojiCategory(category);
+                };
+                categoriesDiv.appendChild(btn);
+            });
+
+            showEmojiCategory(categoryNames[0]);
+        }
+
+        function showEmojiCategory(category) {
+            const gridDiv = document.getElementById('emojiGrid');
+            gridDiv.innerHTML = '';
+
+            emojiCategories[category].forEach(emoji => {
+                const span = document.createElement('span');
+                span.className = 'emoji-option';
+                span.textContent = emoji;
+                span.onclick = () => {
+                    document.querySelectorAll('.emoji-option').forEach(e => e.classList.remove('selected'));
+                    span.classList.add('selected');
+                    document.getElementById('selectedEmoji').value = emoji;
+                };
+                gridDiv.appendChild(span);
+            });
+        }
+
+        // Gender selection
+        function selectGender(gender) {
+            document.querySelectorAll('.gender-option').forEach(opt => opt.classList.remove('selected'));
+            event.target.closest('.gender-option').classList.add('selected');
+            document.getElementById('playerGender').value = gender;
+        }
+
+        // Register player
+        function registerPlayer(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('playerName').value.trim();
+            const gender = document.getElementById('playerGender').value;
+            const emoji = document.getElementById('selectedEmoji').value;
+
+            gameState.currentPlayer = {
+                name: name,
+                gender: gender,
+                emoji: emoji,
+                checkins: []
+            };
+
+            saveToLocalStorage();
+            closeModal('welcomeModal');
+            showPlayerInfo();
+
+            // Render calendar immediately
+            renderCalendar();
+            updateCheckinButton();
+
+            // Sync data in background
+            showLoading();
+            syncToSheets().then(() => {
+                return syncFromSheets();
+            }).then(() => {
+                updatePlayerEmojis();
+                hideLoading();
+                startAutoSync();
+            }).catch(() => {
+                hideLoading();
+                startAutoSync();
+            });
+        }
+
+        // Modal functions
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        function openSettings() {
+            document.getElementById('soundEnabled').checked = gameState.settings.soundEnabled;
+            openModal('settingsModal');
+        }
+
+        function closeSettings() {
+            closeModal('settingsModal');
+        }
+
+        function saveSettings() {
+            gameState.settings.soundEnabled = document.getElementById('soundEnabled').checked;
+            saveToLocalStorage();
+            closeSettings();
+        }
+
+        function changePlayer() {
+            if (confirm('האם אתה בטוח שברצונך להחליף שחקן? (המידע הנוכחי יישמר)')) {
+                gameState.currentPlayer = null;
+                saveToLocalStorage();
+                closeSettings();
+                location.reload();
+            }
+        }
+
+        // Calculate current Omer day
+        function getCurrentOmerDay() {
+            const start = new Date(gameState.sharedState.omerStartDate);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            start.setHours(0, 0, 0, 0);
+
+            const diffTime = today - start;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            return diffDays + 1; // Day 1 is the start date
+        }
+
+        // Calculate Hebrew date
+        function getHebrewOmerDate(omerDay) {
+            if (omerDay <= 15) {
+                return `${15 + omerDay} ניסן`;
+            } else if (omerDay <= 44) {
+                return `${omerDay - 15} אייר`;
+            } else {
+                return `${omerDay - 44} סיון`;
+            }
+        }
+
+        // Get week number for a day
+        function getWeekNumber(day) {
+            return Math.ceil(day / 7);
+        }
+
+        // Calculate cell position
+        // Day 1 = Friday (6th column from right in RTL)
+        // Grid: 8 rows x 7 columns
+        // Weeks start on Sunday (rightmost column = column 1 in RTL)
+        function calculateCellPosition(omerDay) {
+            // First week (partial): Days 1-2 (Fri-Sat)
+            if (omerDay === 1) {
+                return { row: 1, col: 6 }; // Friday
+            }
+            if (omerDay === 2) {
+                return { row: 1, col: 7 }; // Saturday
+            }
+
+            // Days 3-9 = Week 2 (complete week, row 2)
+            // Days 10-16 = Week 3 (complete week, row 3)
+            // Days 17-23 = Week 4 (complete week, row 4)
+            // Days 24-30 = Week 5 (complete week, row 5)
+            // Days 31-37 = Week 6 (complete week, row 6)
+            // Days 38-44 = Week 7 (complete week, row 7)
+            // Days 45-49 = Week 8 (partial, row 8)
+
+            const adjustedDay = omerDay - 3; // Day 3 becomes 0
+            const weekIndex = Math.floor(adjustedDay / 7); // Which complete week (0-6)
+            const dayInWeek = adjustedDay % 7; // Day within week (0-6 = Sun-Sat)
+
+            return {
+                row: weekIndex + 2, // Row 2-8
+                col: dayInWeek + 1  // Column 1-7 (Sun-Sat)
+            };
+        }
+
+        // Render calendar (structure only, no player data)
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            const currentDay = getCurrentOmerDay();
+
+            // Create 8x7 grid
+            for (let row = 1; row <= 8; row++) {
+                for (let col = 1; col <= 7; col++) {
+                    const cell = document.createElement('div');
+
+                    // Find which Omer day this position represents
+                    let omerDay = null;
+                    for (let day = 1; day <= 49; day++) {
+                        const pos = calculateCellPosition(day);
+                        if (pos.row === row && pos.col === col) {
+                            omerDay = day;
+                            break;
+                        }
+                    }
+
+                    if (omerDay === null) {
+                        cell.className = 'day-cell empty';
+                    } else {
+                        cell.className = 'day-cell';
+                        cell.dataset.day = omerDay;
+                        cell.dataset.week = getWeekNumber(omerDay);
+
+                        if (omerDay === currentDay) {
+                            cell.classList.add('today');
+                        }
+
+                        // Week badge
+                        const week = getWeekNumber(omerDay);
+                        const weekBadge = document.createElement('div');
+                        weekBadge.className = 'week-badge';
+                        weekBadge.textContent = `ש${week}`;
+                        cell.appendChild(weekBadge);
+
+                        // Day number
+                        const dayNum = document.createElement('div');
+                        dayNum.className = 'day-number';
+                        dayNum.textContent = omerDay;
+                        cell.appendChild(dayNum);
+
+                        // Hebrew date
+                        const hebrewDate = document.createElement('div');
+                        hebrewDate.className = 'hebrew-date';
+                        hebrewDate.textContent = getHebrewOmerDate(omerDay);
+                        cell.appendChild(hebrewDate);
+
+                        // Empty players container (will be filled later)
+                        const playersDiv = document.createElement('div');
+                        playersDiv.className = 'players-in-cell';
+                        playersDiv.dataset.dayNumber = omerDay;
+                        cell.appendChild(playersDiv);
+                    }
+
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        // Update only player emojis (after data is fetched)
+        function updatePlayerEmojis() {
+            // Clear existing player emojis
+            document.querySelectorAll('.players-in-cell').forEach(div => {
+                div.innerHTML = '';
+            });
+
+            // Add player emojis to each day
+            for (let day = 1; day <= 49; day++) {
+                const playersDiv = document.querySelector(`.players-in-cell[data-day-number="${day}"]`);
+                if (!playersDiv) continue;
+
+                gameState.sharedState.players.forEach(player => {
+                    if (player.checkins && player.checkins.includes(day)) {
+                        const emoji = document.createElement('span');
+                        emoji.className = 'player-emoji-small';
+                        emoji.textContent = player.emoji;
+                        emoji.title = player.name;
+                        emoji.onclick = (event) => showPlayerTooltip(player.name, event);
+                        playersDiv.appendChild(emoji);
+                    }
+                });
+            }
+        }
+
+        // Show player tooltip
+        function showPlayerTooltip(name, event) {
+            const tooltip = document.createElement('div');
+            tooltip.className = 'tooltip';
+            tooltip.textContent = name;
+            tooltip.style.left = event.pageX + 'px';
+            tooltip.style.top = (event.pageY - 30) + 'px';
+            document.body.appendChild(tooltip);
+
+            setTimeout(() => tooltip.remove(), 2000);
+        }
+
+        // Check-in functions
+        function openBlessingModal() {
+            const currentDay = getCurrentOmerDay();
+
+            if (currentDay < 1) {
+                alert('ספירת העומר מתחילה מחר! 📅');
+                return;
+            }
+
+            if (currentDay > 49) {
+                alert('ספירת העומר הסתיימה! 🎉');
+                return;
+            }
+
+            if (gameState.currentPlayer.checkins && gameState.currentPlayer.checkins.includes(currentDay)) {
+                alert('כבר בירכת היום! ✅');
+                return;
+            }
+
+            const omerText = getOmerCountText(currentDay);
+            document.getElementById('omerCountText').textContent = omerText;
+            openModal('blessingModal');
+        }
+
+        function closeBlessingModal() {
+            closeModal('blessingModal');
+        }
+
+        function getOmerCountText(day) {
+            const weeks = Math.floor((day - 1) / 7);
+            const days = day % 7;
+
+            if (day === 1) {
+                return 'היום יום אחד לעומר';
+            }
+
+            if (day < 7) {
+                return `היום ${getHebrewNumber(day)} ימים לעומר`;
+            }
+
+            let text = 'היום ';
+
+            if (weeks > 0) {
+                if (weeks === 1) {
+                    text += 'שבוע אחד';
+                } else {
+                    text += `${getHebrewNumber(weeks)} שבועות`;
+                }
+            }
+
+            if (days > 0) {
+                if (weeks > 0) {
+                    text += ' ו';
+                }
+                if (days === 1) {
+                    text += 'יום אחד';
+                } else {
+                    text += `${getHebrewNumber(days)} ימים`;
+                }
+            }
+
+            text += ' לעומר';
+            return text;
+        }
+
+        function getHebrewNumber(num) {
+            const ones = ['', 'אחד', 'שניים', 'שלושה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה', 'שִׁבְעָה', 'שְׁמוֹנָה', 'תִּשְׁעָה'];
+            const tens = ['', '', 'עֶשְׂרִים', 'שְׁלוֹשִׁים', 'אַרְבָּעִים'];
+
+            if (num < 10) return ones[num];
+            if (num < 20) {
+                const special = ['עֲשָׂרָה', 'אַחַד עָשָׂר', 'שְׁנֵים עָשָׂר', 'שְׁלוֹשָׁה עָשָׂר', 'אַרְבָּעָה עָשָׂר', 'חֲמִשָּׁה עָשָׂר', 'שִׁשָּׁה עָשָׂר', 'שִׁבְעָה עָשָׂר', 'שְׁמוֹנָה עָשָׂר', 'תִּשְׁעָה עָשָׂר'];
+                return special[num - 10];
+            }
+
+            const ten = Math.floor(num / 10);
+            const one = num % 10;
+            return ones[one] ? `${ones[one]} ו${tens[ten]}` : tens[ten];
+        }
+
+        async function confirmBlessing() {
+            const currentDay = getCurrentOmerDay();
+
+            if (!gameState.currentPlayer.checkins) {
+                gameState.currentPlayer.checkins = [];
+            }
+
+            gameState.currentPlayer.checkins.push(currentDay);
+            saveToLocalStorage();
+
+            closeBlessingModal();
+
+            // Update local display immediately
+            updatePlayerEmojis();
+            updateCheckinButton();
+            animateNewCheckin(currentDay);
+            showCongratsMessage();
+
+            // Sync to sheets in background
+            showLoading();
+            try {
+                await syncToSheets();
+                await syncFromSheets();
+                updatePlayerEmojis();
+                hideLoading();
+            } catch (error) {
+                hideLoading();
+                console.error('Sync error:', error);
+            }
+        }
+
+        function animateNewCheckin(day) {
+            const cells = document.querySelectorAll(`.day-cell[data-day="${day}"]`);
+            cells.forEach(cell => {
+                const emojis = cell.querySelectorAll('.player-emoji-small');
+                if (emojis.length > 0) {
+                    const lastEmoji = emojis[emojis.length - 1];
+                    lastEmoji.classList.add('emoji-animate');
+                }
+            });
+        }
+
+        function showCongratsMessage() {
+            const isLeader = checkIfLeader();
+            const gender = gameState.currentPlayer.gender;
+
+            const messages = ['שכוייעח! 🤝', 'חזק וברוך! 🤝', 'כל הכבוד! 🎉'];
+            const msg = messages[Math.floor(Math.random() * messages.length)];
+
+            let title = msg;
+            let text = '';
+
+            if (isLeader) {
+                text = gender === 'male' ? 'זריז למצוות! 🏆' : 'זריזה למצוות! 🏆';
+                createConfetti();
+            }
+
+            document.getElementById('congratsTitle').textContent = title;
+            document.getElementById('congratsText').textContent = text;
+
+            const congratsDiv = document.getElementById('congratsMessage');
+            congratsDiv.classList.add('active');
+
+            setTimeout(() => {
+                congratsDiv.classList.remove('active');
+            }, 3000);
+        }
+
+        function checkIfLeader() {
+            if (!gameState.currentPlayer.checkins) return false;
+
+            const myCount = gameState.currentPlayer.checkins.length;
+
+            for (const player of gameState.sharedState.players) {
+                if (player.name === gameState.currentPlayer.name) continue;
+                const theirCount = player.checkins ? player.checkins.length : 0;
+                if (theirCount >= myCount) return false;
+            }
+
+            return gameState.sharedState.players.length > 1;
+        }
+
+        function createConfetti() {
+            const colors = ['#f00', '#0f0', '#00f', '#ff0', '#f0f', '#0ff'];
+
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        function updateCheckinButton() {
+            const btn = document.getElementById('checkinBtn');
+            const currentDay = getCurrentOmerDay();
+
+            if (currentDay < 1 || currentDay > 49) {
+                btn.disabled = true;
+                btn.textContent = 'ספירת העומר לא פעילה';
+                return;
+            }
+
+            if (gameState.currentPlayer.checkins && gameState.currentPlayer.checkins.includes(currentDay)) {
+                btn.disabled = true;
+                btn.textContent = '✅ בירכתי היום!';
+            } else {
+                btn.disabled = false;
+                btn.textContent = 'בירכתי! 🙏';
+            }
+        }
+
+        // Google Sheets sync
+        async function syncToSheets() {
+            if (!gameState.settings.appsScriptUrl) {
+                console.log('No Apps Script URL configured');
+                return;
+            }
+
+            try {
+                const response = await fetch(gameState.settings.appsScriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        action: 'updatePlayer',
+                        player: gameState.currentPlayer
+                    })
+                });
+
+                console.log('Synced to sheets');
+            } catch (error) {
+                console.error('Error syncing to sheets:', error);
+            }
+        }
+
+        async function syncFromSheets() {
+            if (!gameState.settings.appsScriptUrl) {
+                console.log('No Apps Script URL configured');
+                return;
+            }
+
+            try {
+                const response = await fetch(gameState.settings.appsScriptUrl);
+                const data = await response.json();
+
+                if (data && data.players) {
+                    gameState.sharedState.players = data.players;
+
+                    // Update current player from shared state
+                    const me = data.players.find(p => p.name === gameState.currentPlayer.name);
+                    if (me) {
+                        gameState.currentPlayer.checkins = me.checkins || [];
+                        saveToLocalStorage();
+                    }
+                }
+
+                console.log('Synced from sheets:', data);
+            } catch (error) {
+                console.error('Error syncing from sheets:', error);
+            }
+        }
+
+        function startAutoSync() {
+            if (syncInterval) {
+                clearInterval(syncInterval);
+            }
+
+            syncInterval = setInterval(() => {
+                showLoading();
+                syncFromSheets().then(() => {
+                    updatePlayerEmojis();
+                    updateCheckinButton();
+                    hideLoading();
+                }).catch(() => {
+                    hideLoading();
+                });
+            }, gameState.settings.autoSyncInterval);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>

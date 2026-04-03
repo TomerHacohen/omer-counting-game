@@ -1685,10 +1685,14 @@
                 return false; // First time checking in
             }
 
-            // Check if there are any gaps in the checkins before today
-            for (let day = 1; day < currentDay; day++) {
+            // Find the first day the player checked in
+            const firstCheckin = Math.min(...gameState.currentPlayer.checkins);
+
+            // Only check for gaps AFTER their first check-in
+            // (Don't penalize for days before they joined the game)
+            for (let day = firstCheckin; day < currentDay; day++) {
                 if (!gameState.currentPlayer.checkins.includes(day)) {
-                    return true; // Found a missed day
+                    return true; // Found a gap after they started
                 }
             }
 

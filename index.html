@@ -767,6 +767,7 @@
     <!-- Welcome Modal -->
     <div class="modal" id="welcomeModal">
         <div class="modal-content">
+            <button class="modal-close" id="welcomeModalClose" onclick="closeWelcomeModal()" style="display: none;">✖</button>
             <div class="modal-header">
                 <h2>ברוכים הבאים! 🌾</h2>
                 <p>הצטרפו למשחק ספירת העומר המשפחתי</p>
@@ -1174,7 +1175,22 @@
             document.getElementById('registrationError').classList.remove('active');
             // Clear form
             document.getElementById('playerName').value = '';
+
+            // Show close button only if there's a current player (opened from "החלף שחקן")
+            const closeBtn = document.getElementById('welcomeModalClose');
+            if (gameState.currentPlayer) {
+                closeBtn.style.display = 'block';
+            } else {
+                closeBtn.style.display = 'none';
+            }
+
             openModal('welcomeModal');
+        }
+
+        function closeWelcomeModal() {
+            closeModal('welcomeModal');
+            // If there's a current player, we're just canceling the "add new player" action
+            // The game continues with the current player
         }
 
         function renderLocalPlayersList() {

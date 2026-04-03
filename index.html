@@ -687,6 +687,10 @@
                 right: 3px;
             }
 
+            .gregorian-date-mobile {
+                display: none;
+            }
+
             .week-badge {
                 font-size: 0.6em;
             }
@@ -1623,7 +1627,7 @@
                         dayInfo.className = 'day-info';
                         const hebrewDate = getHebrewOmerDate(omerDay);
                         const gregorianDate = getGregorianOmerDate(omerDay);
-                        dayInfo.innerHTML = `<strong>${omerDay}</strong> | ${hebrewDate} | ${gregorianDate}`;
+                        dayInfo.innerHTML = `<strong>${omerDay}</strong> | ${hebrewDate}<span class="gregorian-date-mobile"> | ${gregorianDate}</span>`;
                         cell.appendChild(dayInfo);
 
                         // Empty players container (will be filled later)

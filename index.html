@@ -1110,6 +1110,18 @@
                     return;
                 }
 
+                // Check for emoji uniqueness
+                const emojiExists = gameState.sharedState.players.find(
+                    p => p.emoji === emoji
+                );
+
+                if (emojiExists) {
+                    errorDiv.textContent = `האמוג'י ${emoji} כבר נמצא בשימוש על ידי ${emojiExists.name}. אנא בחר אמוג'י אחר.`;
+                    errorDiv.classList.add('active');
+                    hideLoading();
+                    return;
+                }
+
                 // Create new player
                 const newPlayer = {
                     name: name,

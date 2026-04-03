@@ -687,7 +687,7 @@
                 right: 3px;
             }
 
-            .gregorian-date-mobile {
+            .dates-mobile {
                 display: none;
             }
 
@@ -1627,7 +1627,7 @@
                         dayInfo.className = 'day-info';
                         const hebrewDate = getHebrewOmerDate(omerDay);
                         const gregorianDate = getGregorianOmerDate(omerDay);
-                        dayInfo.innerHTML = `<strong>${omerDay}</strong> | ${hebrewDate}<span class="gregorian-date-mobile"> | ${gregorianDate}</span>`;
+                        dayInfo.innerHTML = `<strong>${omerDay}</strong><span class="dates-mobile"> | ${hebrewDate} | ${gregorianDate}</span>`;
                         cell.appendChild(dayInfo);
 
                         // Empty players container (will be filled later)

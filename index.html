@@ -764,6 +764,29 @@
         </div>
     </div>
 
+    <!-- Player Found Confirmation Modal -->
+    <div class="modal" id="playerFoundModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>שחקן קיים נמצא! 👤</h2>
+            </div>
+            <div style="text-align: center; padding: 20px;">
+                <div style="font-size: 4em; margin: 20px 0;" id="foundPlayerEmoji"></div>
+                <div style="font-size: 1.5em; font-weight: bold; margin: 10px 0;" id="foundPlayerName"></div>
+                <div style="font-size: 1.2em; color: #667eea; margin: 10px 0;" id="foundPlayerStats"></div>
+                <p style="font-size: 1.1em; margin: 20px 0;">האם זה אתה?</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-primary" onclick="confirmExistingPlayer()" style="flex: 1; background: #11998e;">
+                    כן, זה אני! ✅
+                </button>
+                <button class="btn-primary" onclick="rejectExistingPlayer()" style="flex: 1; background: #f5576c;">
+                    לא, שחקן אחר ❌
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Welcome Modal -->
     <div class="modal" id="welcomeModal">
         <div class="modal-content">
@@ -1057,6 +1080,8 @@
             document.getElementById('playerGender').value = gender;
         }
 
+        let pendingRegistration = null;
+
         // Register player
         async function registerPlayer(event) {
             event.preventDefault();
@@ -1065,11 +1090,11 @@
             const gender = document.getElementById('playerGender').value;
             const emoji = document.getElementById('selectedEmoji').value;
 
-            // Validate name uniqueness
+            // Clear error message
             const errorDiv = document.getElementById('registrationError');
             errorDiv.classList.remove('active');
 
-            // Check against Google Sheets
+            // Check against Google Sheets for existing player
             showLoading();
             try {
                 await syncFromSheets();
@@ -1079,9 +1104,9 @@
                 );
 
                 if (existingPlayer) {
-                    errorDiv.textContent = `השם "${name}" כבר קיים במשחק. אנא בחר שם אחר.`;
-                    errorDiv.classList.add('active');
+                    // Found existing player - ask if it's them
                     hideLoading();
+                    showPlayerFoundConfirmation(existingPlayer, { name, gender, emoji });
                     return;
                 }
 
@@ -1191,6 +1216,79 @@
             closeModal('welcomeModal');
             // If there's a current player, we're just canceling the "add new player" action
             // The game continues with the current player
+        }
+
+        // Show confirmation dialog when existing player is found
+        function showPlayerFoundConfirmation(existingPlayer, newPlayerData) {
+            pendingRegistration = newPlayerData;
+
+            // Display existing player info
+            document.getElementById('foundPlayerEmoji').textContent = existingPlayer.emoji;
+            document.getElementById('foundPlayerName').textContent = existingPlayer.name;
+
+            const checkinCount = existingPlayer.checkins ? existingPlayer.checkins.length : 0;
+            const currentDay = getCurrentOmerDay();
+            const maxDay = Math.min(currentDay - 1, 49);
+            document.getElementById('foundPlayerStats').textContent =
+                `${checkinCount} ימים נספרו${maxDay > 0 ? ` מתוך ${maxDay}` : ''}`;
+
+            // Close welcome modal and show confirmation
+            closeModal('welcomeModal');
+            openModal('playerFoundModal');
+        }
+
+        // User confirms it's them - load existing player
+        function confirmExistingPlayer() {
+            const existingPlayer = gameState.sharedState.players.find(
+                p => p.name.toLowerCase() === pendingRegistration.name.toLowerCase()
+            );
+
+            if (existingPlayer) {
+                // Load the existing player's data
+                gameState.currentPlayer = {
+                    name: existingPlayer.name,
+                    gender: existingPlayer.gender,
+                    emoji: existingPlayer.emoji,
+                    checkins: existingPlayer.checkins || []
+                };
+
+                // Add to local players list if not already there
+                const localPlayerIndex = gameState.localPlayers.findIndex(
+                    p => p.name.toLowerCase() === existingPlayer.name.toLowerCase()
+                );
+                if (localPlayerIndex === -1) {
+                    gameState.localPlayers.push(gameState.currentPlayer);
+                } else {
+                    gameState.localPlayers[localPlayerIndex] = gameState.currentPlayer;
+                }
+
+                saveToLocalStorage();
+                closeModal('playerFoundModal');
+                showPlayerInfo();
+
+                // Render calendar
+                renderCalendar();
+                updatePlayerEmojis();
+                updateCheckinButton();
+                startAutoSync();
+
+                pendingRegistration = null;
+            }
+        }
+
+        // User says it's not them - continue with new registration
+        function rejectExistingPlayer() {
+            closeModal('playerFoundModal');
+
+            // Show error suggesting different name
+            const errorDiv = document.getElementById('registrationError');
+            errorDiv.textContent = `השם "${pendingRegistration.name}" כבר קיים במשחק. אנא בחר שם אחר.`;
+            errorDiv.classList.add('active');
+
+            // Reopen welcome modal
+            openModal('welcomeModal');
+
+            pendingRegistration = null;
         }
 
         function renderLocalPlayersList() {

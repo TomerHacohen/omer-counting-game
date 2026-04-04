@@ -73,36 +73,6 @@
             width: fit-content;
         }
 
-        /* Fade effect below sticky elements */
-        .checkin-btn::after {
-            content: '';
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: -50px;
-            width: 100vw;
-            height: 50px;
-            background: linear-gradient(to bottom,
-                rgba(245, 245, 245, 1) 0%,
-                rgba(245, 245, 245, 0.9) 30%,
-                rgba(245, 245, 245, 0.5) 70%,
-                transparent 100%);
-            pointer-events: none;
-            z-index: 98;
-        }
-
-        .header::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            bottom: -30px;
-            width: 100%;
-            height: 30px;
-            background: linear-gradient(to bottom,
-                rgba(102, 126, 234, 0.5) 0%,
-                transparent 100%);
-            pointer-events: none;
-        }
 
         .checkin-btn:hover {
             transform: scale(1.05);
@@ -121,6 +91,26 @@
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            position: relative;
+            margin-top: 30px;
+        }
+
+        /* Fade mask for calendar - 100% opaque at header bottom edge */
+        .calendar-container::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 180px;
+            background: linear-gradient(to bottom,
+                rgba(245, 245, 245, 1) 0%,
+                rgba(245, 245, 245, 1) 50%,
+                rgba(245, 245, 245, 0.8) 70%,
+                rgba(245, 245, 245, 0.4) 90%,
+                transparent 100%);
+            pointer-events: none;
+            z-index: 97;
         }
 
         .calendar-header {
@@ -220,12 +210,12 @@
             flex-wrap: wrap;
             gap: 3px;
             justify-content: center;
-            margin-top: auto;
-            padding-top: 25px;
+            margin-top: 30px;
+            padding-top: 0;
         }
 
         .player-emoji-small {
-            font-size: 1.2em;
+            font-size: 1.3em;
             cursor: pointer;
             transition: transform 0.2s;
         }
@@ -755,14 +745,14 @@
                 display: none;
             }
 
-            /* Mobile week labels (dynamic, shown per row) */
+            /* Mobile week labels (in flow before focused carousel) */
             .mobile-week-labels {
                 display: flex;
                 justify-content: space-around;
                 padding: 10px 20px;
                 background: #f8f9fa;
                 border-radius: 10px;
-                margin: 10px 15px;
+                margin: 10px 15px 5px 15px;
                 direction: rtl;
             }
 
@@ -835,7 +825,8 @@
             }
 
             .players-in-cell {
-                padding-top: 20px;
+                margin-top: 25px;
+                padding-top: 0;
             }
 
             .day-info {
@@ -844,16 +835,12 @@
                 right: 3px;
             }
 
-            .dates-mobile {
-                display: none;
-            }
-
             .week-badge {
                 font-size: 0.65em;
             }
 
             .player-emoji-small {
-                font-size: 0.9em;
+                font-size: 1.0em;
             }
 
             .emoji-grid {
@@ -1742,16 +1729,11 @@
             const isMobile = window.innerWidth <= 768;
 
             if (isMobile) {
-                // Mobile: Render as carousel rows
+                // Mobile: Render carousel rows with labels
                 for (let row = 1; row <= 8; row++) {
-                    const rowContainer = document.createElement('div');
-                    rowContainer.className = 'calendar-row';
-                    rowContainer.dataset.row = row;
-
-                    // Add day labels for this row (initially hidden)
+                    // Day labels for this row
                     const dayLabels = document.createElement('div');
                     dayLabels.className = 'mobile-week-labels';
-                    dayLabels.style.display = 'none';
                     dayLabels.innerHTML = `
                         <div class="week-label">ראשון</div>
                         <div class="week-label">שני</div>
@@ -1761,6 +1743,11 @@
                         <div class="week-label">שישי</div>
                         <div class="week-label">שבת</div>
                     `;
+
+                    // Row carousel
+                    const rowContainer = document.createElement('div');
+                    rowContainer.className = 'calendar-row';
+                    rowContainer.dataset.row = row;
 
                     for (let col = 1; col <= 7; col++) {
                         const cell = createDayCell(row, col, currentDay);
@@ -1863,33 +1850,15 @@
             const rows = document.querySelectorAll('.calendar-row');
             const currentDay = getCurrentOmerDay();
 
-            // Add scroll listeners to each row
+            // Add scroll listeners to each row (horizontal scroll)
             rows.forEach(row => {
-                // Update focused cell on scroll
                 row.addEventListener('scroll', () => {
                     updateFocusedCell(row);
                 });
 
-                // Initial focus
+                // Initial focus for each row
                 updateFocusedCell(row);
             });
-
-            // Intersection observer for rows (to show day labels)
-            const rowObserver = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    const labels = entry.target.previousElementSibling;
-                    if (entry.isIntersecting && labels && labels.classList.contains('mobile-week-labels')) {
-                        // Hide all labels first
-                        document.querySelectorAll('.mobile-week-labels').forEach(l => l.style.display = 'none');
-                        // Show this row's labels
-                        labels.style.display = 'flex';
-                    }
-                });
-            }, {
-                threshold: 0.5
-            });
-
-            rows.forEach(row => rowObserver.observe(row));
 
             // Auto-scroll to current day
             setTimeout(() => scrollToCurrentDay(), 300);
@@ -1923,9 +1892,10 @@
                 const pos = calculateCellPosition(focusedDay);
                 focusedCol = pos.col; // 1-7 (Sun-Sat in RTL order)
 
-                // Get the visible day labels for this row
+                // Get this row's labels
                 const labels = row.previousElementSibling;
                 if (labels && labels.classList.contains('mobile-week-labels')) {
+                    // Update highlighting
                     const dayLabels = labels.querySelectorAll('.week-label');
                     dayLabels.forEach((label, index) => {
                         // index 0 = Sunday (col 1), index 1 = Monday (col 2), etc.

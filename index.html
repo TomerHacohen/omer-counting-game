@@ -919,7 +919,10 @@
                 <p>שחקנים שמורים במכשיר זה</p>
             </div>
             <div id="localPlayersList" style="margin-bottom: 20px;"></div>
-            <button class="btn-primary" onclick="showWelcomeModal()">➕ הוסף שחקן חדש</button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-primary" onclick="showWelcomeModal('existing')" style="flex: 1;">🔑 שחקן קיים אחר</button>
+                <button class="btn-secondary" onclick="showWelcomeModal('new')" style="flex: 1;">➕ הוסף שחקן חדש</button>
+            </div>
         </div>
     </div>
 
@@ -951,11 +954,17 @@
         <div class="modal-content">
             <button class="modal-close" id="welcomeModalClose" onclick="closeWelcomeModal()" style="display: none;">✖</button>
             <div class="modal-header">
-                <h2>ברוכים הבאים! 🌾</h2>
-                <p>הצטרפו למשחק ספירת העומר המשפחתי</p>
+                <h2 id="welcomeModalTitle">ברוכים הבאים! 🌾</h2>
+                <p id="welcomeModalSubtitle">הצטרפו למשחק ספירת העומר המשפחתי</p>
             </div>
+
             <div class="error-message" id="registrationError"></div>
-            <form onsubmit="registerPlayer(event)">
+
+            <!-- New Player Form -->
+            <form id="newPlayerForm" onsubmit="registerPlayer(event)">
+                <p style="text-align: center; margin-bottom: 20px; color: #666; font-size: 0.9em;">
+                    יש לך כבר חשבון? <a href="#" onclick="event.preventDefault(); showExistingPlayerMode();" style="color: #667eea; font-weight: bold;">התחבר כאן</a>
+                </p>
                 <div class="form-group">
                     <label>השם שלך:</label>
                     <input type="text" id="playerName" required placeholder="הכנס את שמך">
@@ -983,6 +992,19 @@
                     <input type="hidden" id="selectedEmoji" value="😊">
                 </div>
                 <button type="submit" class="btn-primary">התחל לשחק! 🎮</button>
+            </form>
+
+            <!-- Existing Player Form -->
+            <form id="existingPlayerForm" onsubmit="connectAsExistingPlayer(event)" style="display: none;">
+                <p style="text-align: center; margin-bottom: 20px; color: #666; font-size: 0.9em;">
+                    אין לך חשבון? <a href="#" onclick="event.preventDefault(); showNewPlayerMode();" style="color: #667eea; font-weight: bold;">הירשם כאן</a>
+                </p>
+                <div class="form-group">
+                    <label>הכנס את השם שלך:</label>
+                    <input type="text" id="existingPlayerName" required placeholder="הכנס את שמך">
+                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">הכנס את השם המדויק שרשמת בעבר</p>
+                </div>
+                <button type="submit" class="btn-primary">התחבר 🔑</button>
             </form>
         </div>
     </div>
@@ -1554,12 +1576,20 @@
             openModal('playerSelectionModal');
         }
 
-        function showWelcomeModal() {
+        function showWelcomeModal(mode = 'new') {
             closeModal('playerSelectionModal');
             // Clear error message
             document.getElementById('registrationError').classList.remove('active');
-            // Clear form
+            // Clear forms
             document.getElementById('playerName').value = '';
+            document.getElementById('existingPlayerName').value = '';
+
+            // Show appropriate mode
+            if (mode === 'existing') {
+                showExistingPlayerMode();
+            } else {
+                showNewPlayerMode();
+            }
 
             // Show close button only if there's a current player (opened from "החלף שחקן")
             const closeBtn = document.getElementById('welcomeModalClose');
@@ -1570,6 +1600,68 @@
             }
 
             openModal('welcomeModal');
+        }
+
+        function showNewPlayerMode() {
+            document.getElementById('newPlayerForm').style.display = 'block';
+            document.getElementById('existingPlayerForm').style.display = 'none';
+            document.getElementById('welcomeModalTitle').textContent = 'ברוכים הבאים! 🌾';
+            document.getElementById('welcomeModalSubtitle').textContent = 'הצטרפו למשחק ספירת העומר המשפחתי';
+            document.getElementById('registrationError').classList.remove('active');
+        }
+
+        function showExistingPlayerMode() {
+            document.getElementById('newPlayerForm').style.display = 'none';
+            document.getElementById('existingPlayerForm').style.display = 'block';
+            document.getElementById('welcomeModalTitle').textContent = 'התחבר כשחקן קיים 🔑';
+            document.getElementById('welcomeModalSubtitle').textContent = 'הכנס את השם שלך להתחברות';
+            document.getElementById('registrationError').classList.remove('active');
+        }
+
+        async function connectAsExistingPlayer(event) {
+            event.preventDefault();
+
+            const name = document.getElementById('existingPlayerName').value.trim();
+            const errorDiv = document.getElementById('registrationError');
+            errorDiv.classList.remove('active');
+
+            if (!name) {
+                errorDiv.textContent = 'אנא הכנס שם';
+                errorDiv.classList.add('active');
+                return;
+            }
+
+            // Sync from sheets to get latest player list
+            showLoading();
+            try {
+                await syncFromSheets();
+
+                const existingPlayer = gameState.sharedState.players.find(
+                    p => p.name.toLowerCase() === name.toLowerCase()
+                );
+
+                if (!existingPlayer) {
+                    // Player not found
+                    hideLoading();
+                    errorDiv.textContent = `השם "${name}" לא נמצא. אנא בדוק את האיות או הירשם כשחקן חדש.`;
+                    errorDiv.classList.add('active');
+                    return;
+                }
+
+                // Player found - show confirmation dialog
+                hideLoading();
+                showPlayerFoundConfirmation(existingPlayer, {
+                    name: existingPlayer.name,
+                    gender: existingPlayer.gender,
+                    emoji: existingPlayer.emoji
+                });
+
+            } catch (error) {
+                console.error('Connection error:', error);
+                errorDiv.textContent = 'שגיאה בחיבור. נסה שוב.';
+                errorDiv.classList.add('active');
+                hideLoading();
+            }
         }
 
         function closeWelcomeModal() {

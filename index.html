@@ -420,6 +420,25 @@
             transform: scale(1.05);
         }
 
+        .btn-secondary {
+            width: 100%;
+            padding: 15px;
+            background: white;
+            color: #666;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #f5f5f5;
+            border-color: #999;
+            transform: scale(1.05);
+        }
+
         .blessing-text {
             background: #f9f9f9;
             padding: 20px;
@@ -1018,6 +1037,17 @@
         <span>טוען נתונים...</span>
     </div>
 
+    <!-- Catch-up Modal -->
+    <div class="modal" id="catchupModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>פספסת ימים! 📅</h2>
+                <p>עדיין ניתן לבדוק את הימים הבאים:</p>
+            </div>
+            <div id="missedDaysList" style="margin: 20px 0;"></div>
+        </div>
+    </div>
+
     <script>
         // ============================================
         // CONFIGURATION - Set your Google Apps Script URL here
@@ -1113,12 +1143,189 @@
                     updatePlayerEmojis();
                     updateCheckinButton();
                     hideLoading();
+
+                    // Check for missed days in grace period
+                    checkAndShowCatchup();
                 }).catch(() => {
                     hideLoading();
                 });
 
                 startAutoSync();
             }
+        }
+
+        // Check if an Omer day falls on Shabbat
+        function isShabbatDay(omerDay) {
+            const startDate = new Date(gameState.sharedState.omerStartDate);
+            const targetDate = new Date(startDate);
+            targetDate.setDate(startDate.getDate() + omerDay - 1);
+
+            // Get day of week (0 = Sunday, 6 = Saturday)
+            // Shabbat is when the Hebrew day includes Saturday
+            // Since Hebrew day starts after tzeit the night before,
+            // we need to check if the day is Friday (day 5)
+            // because Friday after tzeit → Saturday = Shabbat
+            const dayOfWeek = targetDate.getDay();
+            const isShabbat = dayOfWeek === 5;
+
+            console.log(`isShabbatDay(${omerDay}):`, {
+                startDate,
+                targetDate,
+                dayOfWeek,
+                dayName: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][dayOfWeek],
+                isShabbat
+            });
+
+            return isShabbat; // Friday (because Friday night → Saturday is Shabbat)
+        }
+
+        // Check if we're in the catch-up window (motzei Shabbat until next tzeit)
+        function isInCatchupWindow() {
+            // We're in the window if:
+            // 1. It's motzei Shabbat (Saturday night after tzeit) OR Sunday before tzeit
+            // 2. Basically: it's currently Sunday (the day after Shabbat)
+
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const afterTzeit = isAfterTzeit();
+
+            console.log('isInCatchupWindow check:', { dayOfWeek, afterTzeit, now });
+
+            // If it's Saturday after tzeit, we're on "Sunday" (Hebrew day)
+            // If it's Sunday before tzeit, we're still on "Sunday" (Hebrew day)
+            // So we check if it's Saturday or Sunday
+            if (dayOfWeek === 6 && afterTzeit) {
+                // Saturday night after tzeit (motzei Shabbat)
+                console.log('In catch-up window: Saturday after tzeit');
+                return true;
+            }
+            if (dayOfWeek === 0 && !afterTzeit) {
+                // Sunday before tzeit
+                console.log('In catch-up window: Sunday before tzeit');
+                return true;
+            }
+
+            console.log('NOT in catch-up window');
+            return false;
+        }
+
+        // Get missed days that are still within grace period
+        function getMissedDaysInGracePeriod() {
+            if (!gameState.currentPlayer) {
+                return [];
+            }
+
+            // Initialize checkins if not present
+            if (!gameState.currentPlayer.checkins) {
+                gameState.currentPlayer.checkins = [];
+            }
+
+            // Only allow catch-up during the specific window
+            if (!isInCatchupWindow()) {
+                return [];
+            }
+
+            const currentDay = getCurrentOmerDay();
+            const missedDays = [];
+
+            // Only check yesterday (currentDay - 1)
+            const yesterday = currentDay - 1;
+
+            if (yesterday >= 1 && yesterday <= 49) {
+                // Check if user didn't check in for yesterday
+                if (!gameState.currentPlayer.checkins.includes(yesterday)) {
+                    missedDays.push(yesterday);
+                }
+            }
+
+            return missedDays;
+        }
+
+        // Check and show catch-up modal if there are missed days
+        function checkAndShowCatchup() {
+            const missedDays = getMissedDaysInGracePeriod();
+
+            console.log('Catch-up check:', {
+                missedDays,
+                currentDay: getCurrentOmerDay(),
+                isInWindow: isInCatchupWindow(),
+                currentPlayer: gameState.currentPlayer,
+                checkins: gameState.currentPlayer?.checkins
+            });
+
+            if (missedDays.length > 0) {
+                showCatchupModal(missedDays);
+            }
+        }
+
+        // Show catch-up modal with missed days
+        function showCatchupModal(missedDays) {
+            // Update modal header with Shabbat-specific message
+            const modalHeader = document.querySelector('#catchupModal .modal-header');
+            const day = missedDays[0]; // Should only be one day (yesterday)
+
+            // Simple numeric format: "X ימים לעומר" or "יום אחד לעומר"
+            let countText;
+            if (day === 1) {
+                countText = 'יום אחד לעומר';
+            } else {
+                countText = `${day} ימים לעומר`;
+            }
+
+            modalHeader.innerHTML = `
+                <h2>בשבת היה ${countText}</h2>
+                <p>האם ספרת?</p>
+            `;
+
+            const listDiv = document.getElementById('missedDaysList');
+            listDiv.innerHTML = `
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button class="btn-primary" onclick="catchupDay(${day})" style="flex: 1; max-width: 150px;">כן, ספרתי</button>
+                    <button class="btn-secondary" onclick="skipCatchup()" style="flex: 1; max-width: 150px;">דלג</button>
+                </div>
+            `;
+
+            openModal('catchupModal');
+        }
+
+        // Check in for a missed day (retroactive)
+        async function catchupDay(day) {
+            if (!gameState.currentPlayer.checkins) {
+                gameState.currentPlayer.checkins = [];
+            }
+
+            // Add the missed day
+            gameState.currentPlayer.checkins.push(day);
+            gameState.currentPlayer.checkins.sort((a, b) => a - b);
+
+            // Update in local players list
+            const localIndex = gameState.localPlayers.findIndex(
+                p => p.name === gameState.currentPlayer.name
+            );
+            if (localIndex !== -1) {
+                gameState.localPlayers[localIndex].checkins = gameState.currentPlayer.checkins;
+            }
+
+            saveToLocalStorage();
+
+            // Sync to sheets
+            await syncToSheets(gameState.currentPlayer);
+
+            // Update UI
+            updatePlayerEmojis();
+            updateCheckinButton();
+
+            // Show success message
+            showCongratsMessage();
+
+            // Close modal and check if there are more missed days
+            closeModal('catchupModal');
+            setTimeout(() => checkAndShowCatchup(), 1000);
+        }
+
+        // Skip catch-up
+        function skipCatchup() {
+            closeModal('catchupModal');
         }
 
         // Load from localStorage

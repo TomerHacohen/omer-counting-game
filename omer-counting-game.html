@@ -2220,17 +2220,22 @@
             const row = currentCell.closest('.calendar-row');
             if (!row) return;
 
-            // Scroll row to center the current cell
-            const cellRect = currentCell.getBoundingClientRect();
-            const rowRect = row.getBoundingClientRect();
-            const scrollLeft = currentCell.offsetLeft - (row.offsetWidth / 2) + (currentCell.offsetWidth / 2);
+            // Check if current day is Sunday (col 1 in RTL - already at start)
+            const pos = calculateCellPosition(currentDay);
+            const isSunday = pos.col === 1;
 
-            row.scrollTo({
-                left: scrollLeft,
-                behavior: 'smooth'
-            });
+            // Only scroll horizontally if not Sunday
+            if (!isSunday) {
+                // Scroll row to center the current cell
+                const scrollLeft = currentCell.offsetLeft - (row.offsetWidth / 2) + (currentCell.offsetWidth / 2);
 
-            // Scroll page to show this row
+                row.scrollTo({
+                    left: scrollLeft,
+                    behavior: 'smooth'
+                });
+            }
+
+            // Always scroll page to show this row
             setTimeout(() => {
                 row.scrollIntoView({
                     behavior: 'smooth',

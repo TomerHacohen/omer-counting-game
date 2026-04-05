@@ -1316,7 +1316,7 @@
             updateCheckinButton();
 
             // Show success message
-            showCongratsMessage();
+            showCongratsMessage(day);
 
             // Close modal and check if there are more missed days
             closeModal('catchupModal');
@@ -2313,7 +2313,7 @@
             updatePlayerEmojis();
             updateCheckinButton();
             animateNewCheckin(currentDay);
-            showCongratsMessage();
+            showCongratsMessage(currentDay);
 
             // Sync to sheets in background
             showLoading();
@@ -2339,8 +2339,8 @@
             });
         }
 
-        function showCongratsMessage() {
-            const isLeader = checkIfLeader();
+        function showCongratsMessage(day) {
+            const isLeader = checkIfLeader(day);
             const gender = gameState.currentPlayer.gender;
 
             const messages = ['שכוייעח! 🤝', 'חזק וברוך! 🤝', 'כל הכבוד! 🎉'];
@@ -2365,17 +2365,21 @@
             }, 3000);
         }
 
-        function checkIfLeader() {
+        function checkIfLeader(day) {
+            // Check if current player is the FIRST to check in for this specific day
             if (!gameState.currentPlayer.checkins) return false;
+            if (!gameState.currentPlayer.checkins.includes(day)) return false;
 
-            const myCount = gameState.currentPlayer.checkins.length;
-
+            // Check if any other player has already checked in for this day
             for (const player of gameState.sharedState.players) {
                 if (player.name === gameState.currentPlayer.name) continue;
-                const theirCount = player.checkins ? player.checkins.length : 0;
-                if (theirCount >= myCount) return false;
+                if (player.checkins && player.checkins.includes(day)) {
+                    // Someone else already checked in for this day
+                    return false;
+                }
             }
 
+            // Current player is first to check in for this day (and there are other players)
             return gameState.sharedState.players.length > 1;
         }
 

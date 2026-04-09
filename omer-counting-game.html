@@ -1242,18 +1242,32 @@
                 gameState.currentPlayer.checkins = [];
             }
 
-            // Only allow catch-up during the specific window
-            if (!isInCatchupWindow()) {
-                return [];
+            // Initialize skippedCatchups if not present
+            if (!gameState.currentPlayer.skippedCatchups) {
+                gameState.currentPlayer.skippedCatchups = [];
             }
 
             const currentDay = getCurrentOmerDay();
             const missedDays = [];
 
-            // Only check yesterday (currentDay - 1)
+            // Check for day 6 catch-up (available anytime after day 6)
+            if (currentDay > 6) {
+                if (!gameState.currentPlayer.checkins.includes(6) &&
+                    !gameState.currentPlayer.skippedCatchups.includes(6)) {
+                    missedDays.push(6);
+                    return missedDays; // Return immediately if day 6 needs catch-up
+                }
+            }
+
+            // Only allow Shabbat catch-up during the specific window
+            if (!isInCatchupWindow()) {
+                return [];
+            }
+
+            // Only check yesterday (currentDay - 1) for Shabbat catch-up
             const yesterday = currentDay - 1;
 
-            if (yesterday >= 1 && yesterday <= 49) {
+            if (yesterday >= 1 && yesterday <= 49 && yesterday !== 6) { // Don't double-check day 6
                 // Check if user didn't check in for yesterday
                 if (!gameState.currentPlayer.checkins.includes(yesterday)) {
                     missedDays.push(yesterday);
@@ -1282,9 +1296,9 @@
 
         // Show catch-up modal with missed days
         function showCatchupModal(missedDays) {
-            // Update modal header with Shabbat-specific message
+            // Update modal header with appropriate message
             const modalHeader = document.querySelector('#catchupModal .modal-header');
-            const day = missedDays[0]; // Should only be one day (yesterday)
+            const day = missedDays[0]; // Should only be one day
 
             // Simple numeric format: "X ימים לעומר" or "יום אחד לעומר"
             let countText;
@@ -1294,8 +1308,16 @@
                 countText = `${day} ימים לעומר`;
             }
 
+            // Different messages for day 6 vs Shabbat
+            let headerText;
+            if (day === 6) {
+                headerText = `בשביעי של פסח היה ${countText}`;
+            } else {
+                headerText = `בשבת היה ${countText}`;
+            }
+
             modalHeader.innerHTML = `
-                <h2>בשבת היה ${countText}</h2>
+                <h2>${headerText}</h2>
                 <p>האם ספרת?</p>
             `;
 
@@ -1303,7 +1325,7 @@
             listDiv.innerHTML = `
                 <div style="display: flex; gap: 10px; justify-content: center;">
                     <button class="btn-primary" onclick="catchupDay(${day})" style="flex: 1; max-width: 150px;">כן, ספרתי</button>
-                    <button class="btn-secondary" onclick="skipCatchup()" style="flex: 1; max-width: 150px;">דלג</button>
+                    <button class="btn-secondary" onclick="skipCatchup(${day})" style="flex: 1; max-width: 150px;">דלג</button>
                 </div>
             `;
 
@@ -1346,7 +1368,26 @@
         }
 
         // Skip catch-up
-        function skipCatchup() {
+        function skipCatchup(day) {
+            // Track that this day's catch-up was skipped
+            if (!gameState.currentPlayer.skippedCatchups) {
+                gameState.currentPlayer.skippedCatchups = [];
+            }
+
+            if (day && !gameState.currentPlayer.skippedCatchups.includes(day)) {
+                gameState.currentPlayer.skippedCatchups.push(day);
+
+                // Update in local players list
+                const localIndex = gameState.localPlayers.findIndex(
+                    p => p.name === gameState.currentPlayer.name
+                );
+                if (localIndex !== -1) {
+                    gameState.localPlayers[localIndex].skippedCatchups = gameState.currentPlayer.skippedCatchups;
+                }
+
+                saveToLocalStorage();
+            }
+
             closeModal('catchupModal');
         }
 

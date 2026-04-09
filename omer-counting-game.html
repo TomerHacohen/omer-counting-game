@@ -2246,6 +2246,34 @@
                     }
                 });
             }
+
+            // Update today's wheat emoji
+            updateTodayWheat();
+        }
+
+        // Update wheat emoji for today if user hasn't checked in
+        function updateTodayWheat() {
+            const currentDay = getCurrentOmerDay();
+            const todayCell = document.querySelector(`.day-cell[data-day="${currentDay}"]`);
+
+            if (!todayCell) return;
+
+            // Remove any existing today-wheat
+            const existingWheat = todayCell.querySelector('.today-wheat');
+            if (existingWheat) {
+                existingWheat.remove();
+            }
+
+            // Check if current player has checked in today
+            if (gameState.currentPlayer &&
+                gameState.currentPlayer.checkins &&
+                !gameState.currentPlayer.checkins.includes(currentDay)) {
+                // User hasn't checked in yet - show wheat emoji
+                const wheatEmoji = document.createElement('div');
+                wheatEmoji.className = 'future-wheat today-wheat';
+                wheatEmoji.textContent = '🌾';
+                todayCell.appendChild(wheatEmoji);
+            }
         }
 
         // Mobile carousel initialization

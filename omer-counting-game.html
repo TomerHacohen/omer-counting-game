@@ -214,6 +214,16 @@
             padding-top: 0;
         }
 
+        .future-wheat {
+            font-size: 2.5em;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
         .player-emoji-small {
             font-size: 1.3em;
             cursor: pointer;
@@ -534,6 +544,14 @@
             align-items: center;
             gap: 10px;
             color: white;
+        }
+
+        .wheat-collection {
+            text-align: center;
+            font-size: 1.2em;
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .change-player-btn {
@@ -890,6 +908,7 @@
                 <span id="currentPlayerName"></span>
                 <button class="change-player-btn" onclick="changePlayer()">החלף שחקן</button>
             </div>
+            <div class="wheat-collection" id="wheatCollection"></div>
         </div>
 
         <button class="checkin-btn" id="checkinBtn" onclick="openBlessingModal()" style="display: none;">בירכתי! 🙏</button>
@@ -1357,6 +1376,7 @@
 
             // Update UI
             updatePlayerEmojis();
+            updateWheatCollection();
             updateCheckinButton();
 
             // Show success message
@@ -1419,12 +1439,47 @@
             }));
         }
 
+        // Update wheat collection display
+        function updateWheatCollection() {
+            const wheatDiv = document.getElementById('wheatCollection');
+            if (!wheatDiv || !gameState.currentPlayer) return;
+
+            const checkinsCount = gameState.currentPlayer.checkins ? gameState.currentPlayer.checkins.length : 0;
+
+            // Calculate sheaves (bundles of 7) and individual wheats
+            const sheaves = Math.floor(checkinsCount / 7);
+            const individualWheats = checkinsCount % 7;
+
+            // Build display HTML with different styling for sheaves vs individual wheats
+            let display = '';
+
+            // Add sheaves (🌾 larger represents 7 wheats bundled)
+            for (let i = 0; i < sheaves; i++) {
+                display += '<span style="font-size: 1.5em;">🌾</span>';
+            }
+
+            // Add space between sheaves and individual wheats if both exist
+            if (sheaves > 0 && individualWheats > 0) {
+                display += ' ';
+            }
+
+            // Add individual wheats (🌾 smaller for each remaining)
+            for (let i = 0; i < individualWheats; i++) {
+                display += '🌾';
+            }
+
+            wheatDiv.innerHTML = display;
+        }
+
         // Show player info
         function showPlayerInfo() {
             document.getElementById('playerInfo').style.display = 'block';
             document.getElementById('checkinBtn').style.display = 'block';
             document.getElementById('currentPlayerEmoji').textContent = gameState.currentPlayer.emoji;
             document.getElementById('currentPlayerName').textContent = gameState.currentPlayer.name;
+
+            // Update wheat collection display
+            updateWheatCollection();
 
             // Set gender-aware check-in button text
             updateCheckinButtonText();
@@ -2155,6 +2210,14 @@
                 playersDiv.className = 'players-in-cell';
                 playersDiv.dataset.dayNumber = omerDay;
                 cell.appendChild(playersDiv);
+
+                // Add wheat emoji for future days
+                if (omerDay > currentDay) {
+                    const wheatEmoji = document.createElement('div');
+                    wheatEmoji.className = 'future-wheat';
+                    wheatEmoji.textContent = '🌾';
+                    cell.appendChild(wheatEmoji);
+                }
             }
 
             return cell;
@@ -2449,6 +2512,7 @@
 
             // Update local display immediately
             updatePlayerEmojis();
+            updateWheatCollection();
             updateCheckinButton();
             animateNewCheckin(currentDay);
             showCongratsMessage(currentDay);

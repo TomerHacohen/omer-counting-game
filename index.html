@@ -1220,11 +1220,12 @@
             return isShabbat; // Friday (because Friday night → Saturday is Shabbat)
         }
 
-        // Check if we're in the catch-up window (motzei Shabbat until next tzeit)
+        // Check if we're in the catch-up window (motzei Shabbat until Monday tzeit)
         function isInCatchupWindow() {
             // We're in the window if:
-            // 1. It's motzei Shabbat (Saturday night after tzeit) OR Sunday before tzeit
-            // 2. Basically: it's currently Sunday (the day after Shabbat)
+            // 1. Saturday night after tzeit (motzei Shabbat)
+            // 2. All day Sunday (before and after tzeit)
+            // 3. Monday before tzeit
 
             const now = new Date();
             const dayOfWeek = now.getDay();
@@ -1232,17 +1233,21 @@
 
             console.log('isInCatchupWindow check:', { dayOfWeek, afterTzeit, now });
 
-            // If it's Saturday after tzeit, we're on "Sunday" (Hebrew day)
-            // If it's Sunday before tzeit, we're still on "Sunday" (Hebrew day)
-            // So we check if it's Saturday or Sunday
+            // Saturday after tzeit (motzei Shabbat)
             if (dayOfWeek === 6 && afterTzeit) {
-                // Saturday night after tzeit (motzei Shabbat)
                 console.log('In catch-up window: Saturday after tzeit');
                 return true;
             }
-            if (dayOfWeek === 0 && !afterTzeit) {
-                // Sunday before tzeit
-                console.log('In catch-up window: Sunday before tzeit');
+
+            // All day Sunday (before and after tzeit)
+            if (dayOfWeek === 0) {
+                console.log('In catch-up window: Sunday');
+                return true;
+            }
+
+            // Monday before tzeit
+            if (dayOfWeek === 1 && !afterTzeit) {
+                console.log('In catch-up window: Monday before tzeit');
                 return true;
             }
 
@@ -1614,6 +1619,9 @@
                 renderCalendar();
                 updateCheckinButton();
 
+                // Check for catch-up opportunities
+                checkAndShowCatchup();
+
                 // Sync data in background
                 syncToSheets().then(() => {
                     return syncFromSheets();
@@ -1818,6 +1826,10 @@
                 renderCalendar();
                 updatePlayerEmojis();
                 updateCheckinButton();
+
+                // Check for catch-up opportunities
+                checkAndShowCatchup();
+
                 startAutoSync();
 
                 pendingRegistration = null;
@@ -1906,6 +1918,9 @@
             renderCalendar();
             updatePlayerEmojis();
             updateCheckinButton();
+
+            // Check for catch-up opportunities
+            checkAndShowCatchup();
 
             // Auto-sync will update in the background (every 60 seconds)
         }
@@ -2740,6 +2755,13 @@
 
         // Initialize on load
         window.addEventListener('load', init);
+
+        // Check for catch-up when tab becomes visible
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && gameState.currentPlayer) {
+                checkAndShowCatchup();
+            }
+        });
     </script>
 </body>
 </html>

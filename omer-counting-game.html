@@ -1169,19 +1169,23 @@
                         p => p.name === gameState.currentPlayer.name
                     );
                     if (sheetPlayer) {
-                        gameState.currentPlayer.checkins = sheetPlayer.checkins || [];
+                        // Deduplicate and sort checkins
+                        const uniqueCheckins = [...new Set(sheetPlayer.checkins || [])];
+                        uniqueCheckins.sort((a, b) => a - b);
+                        gameState.currentPlayer.checkins = uniqueCheckins;
 
                         // Update in local players list too
                         const localIndex = gameState.localPlayers.findIndex(
                             p => p.name === gameState.currentPlayer.name
                         );
                         if (localIndex !== -1) {
-                            gameState.localPlayers[localIndex].checkins = sheetPlayer.checkins || [];
+                            gameState.localPlayers[localIndex].checkins = uniqueCheckins;
                         }
 
                         saveToLocalStorage();
                     }
                     updatePlayerEmojis();
+                    updateWheatCollection();
                     updateCheckinButton();
                     hideLoading();
 
@@ -1364,7 +1368,11 @@
 
             // Add the missed day
             gameState.currentPlayer.checkins.push(day);
-            gameState.currentPlayer.checkins.sort((a, b) => a - b);
+
+            // Deduplicate and sort to ensure data integrity
+            const uniqueCheckins = [...new Set(gameState.currentPlayer.checkins)];
+            uniqueCheckins.sort((a, b) => a - b);
+            gameState.currentPlayer.checkins = uniqueCheckins;
 
             // Update in local players list
             const localIndex = gameState.localPlayers.findIndex(
@@ -2541,6 +2549,11 @@
 
             gameState.currentPlayer.checkins.push(currentDay);
 
+            // Deduplicate and sort to ensure data integrity
+            const uniqueCheckins = [...new Set(gameState.currentPlayer.checkins)];
+            uniqueCheckins.sort((a, b) => a - b);
+            gameState.currentPlayer.checkins = uniqueCheckins;
+
             // Update in local players list too
             const localIndex = gameState.localPlayers.findIndex(
                 p => p.name === gameState.currentPlayer.name
@@ -2706,12 +2719,16 @@
                 const data = await response.json();
 
                 if (data && data.players) {
-                    gameState.sharedState.players = data.players;
+                    // Deduplicate and sort all players' checkins to ensure data integrity
+                    gameState.sharedState.players = data.players.map(player => ({
+                        ...player,
+                        checkins: [...new Set(player.checkins || [])].sort((a, b) => a - b)
+                    }));
 
                     // Update current player from shared state
-                    const me = data.players.find(p => p.name === gameState.currentPlayer.name);
+                    const me = gameState.sharedState.players.find(p => p.name === gameState.currentPlayer.name);
                     if (me) {
-                        gameState.currentPlayer.checkins = me.checkins || [];
+                        gameState.currentPlayer.checkins = me.checkins;
                         saveToLocalStorage();
                     }
                 }
@@ -2731,6 +2748,7 @@
                 showLoading();
                 syncFromSheets().then(() => {
                     updatePlayerEmojis();
+                    updateWheatCollection();
                     updateCheckinButton();
                     hideLoading();
                 }).catch(() => {

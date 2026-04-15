@@ -1095,6 +1095,30 @@
         // ============================================
         const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw87ass6tz0wOAFM2nFWS5OH-tpX2itudGhfXqUwfx1MphM4Pnu8EirpYfviV60Wp9L/exec';
 
+        // Get Apps Script URL with priority: URL param > localStorage > hardcoded default
+        function getAppsScriptUrl() {
+            // 1. Check URL parameter for deployment ID (highest priority - allows custom deployments)
+            // Example: ?deployId=ABC123 becomes https://script.google.com/macros/s/ABC123/exec
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('deployId')) {
+                const deployId = urlParams.get('deployId');
+                const url = `https://script.google.com/macros/s/${deployId}/exec`;
+                console.log('Using Apps Script URL from deployId parameter:', url);
+                return url;
+            }
+
+            // 2. Check settings (saved in localStorage via Settings modal)
+            if (gameState.settings && gameState.settings.appsScriptUrl &&
+                gameState.settings.appsScriptUrl !== GOOGLE_APPS_SCRIPT_URL) {
+                console.log('Using Apps Script URL from settings:', gameState.settings.appsScriptUrl);
+                return gameState.settings.appsScriptUrl;
+            }
+
+            // 3. Fall back to hardcoded default
+            console.log('Using default hardcoded Apps Script URL');
+            return GOOGLE_APPS_SCRIPT_URL;
+        }
+
         // Game state
         const gameState = {
             currentPlayer: null,
@@ -2684,13 +2708,14 @@
 
         // Google Sheets sync
         async function syncToSheets() {
-            if (!gameState.settings.appsScriptUrl) {
+            const appsScriptUrl = getAppsScriptUrl();
+            if (!appsScriptUrl) {
                 console.log('No Apps Script URL configured');
                 return;
             }
 
             try {
-                const response = await fetch(gameState.settings.appsScriptUrl, {
+                const response = await fetch(appsScriptUrl, {
                     method: 'POST',
                     mode: 'no-cors',
                     headers: {
@@ -2709,13 +2734,14 @@
         }
 
         async function syncFromSheets() {
-            if (!gameState.settings.appsScriptUrl) {
+            const appsScriptUrl = getAppsScriptUrl();
+            if (!appsScriptUrl) {
                 console.log('No Apps Script URL configured');
                 return;
             }
 
             try {
-                const response = await fetch(gameState.settings.appsScriptUrl);
+                const response = await fetch(appsScriptUrl);
                 const data = await response.json();
 
                 if (data && data.players) {

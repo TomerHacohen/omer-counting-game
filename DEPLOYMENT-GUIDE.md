@@ -9,7 +9,7 @@
 1. **Create Your Google Sheet & Deploy Apps Script** (see Step 1 below)
 2. **Share this link with your group:**
    ```
-   https://tomerhacohen.github.io/omer-counting-game/?deployId=YOUR_DEPLOYMENT_ID
+   https://tomerhacohen.github.io/omer-counting-game/?id=YOUR_DEPLOYMENT_ID
    ```
    Replace `YOUR_DEPLOYMENT_ID` with your Apps Script Deployment ID from Step 1
 
@@ -80,12 +80,12 @@ You have **two options** for connecting your game to Google Sheets:
 Simply add your Deployment ID to the game URL:
 
 ```
-https://your-game.com/?deployId=YOUR_DEPLOYMENT_ID
+https://your-game.com/?id=YOUR_DEPLOYMENT_ID
 ```
 
 **Example:**
 ```
-https://username.github.io/omer-game/?deployId=AKfycby...
+https://username.github.io/omer-game/?id=AKfycby...
 ```
 
 **Pros:**
@@ -191,12 +191,12 @@ Edit the HTML file to set a default Deployment ID:
 #### If You Used Option A (URL Parameter):
 Share the game URL **with your Deployment ID**:
 ```
-https://your-username.github.io/omer-game/?deployId=YOUR_DEPLOYMENT_ID
+https://your-username.github.io/omer-game/?id=YOUR_DEPLOYMENT_ID
 ```
 
 **Example:**
 ```
-https://username.github.io/omer-game/?deployId=AKfycby...
+https://username.github.io/omer-game/?id=AKfycby...
 ```
 
 #### If You Used Option B (Hardcoded):
@@ -206,7 +206,7 @@ Just share **ONE LINK** - the game URL:
 
 ### For Each Family Member
 
-1. **Open the game link** (with or without `?deployId=...`)
+1. **Open the game link** (with or without `?id=...`)
 2. **Register** with name, gender, and emoji
 3. **That's it!** ✅
 
@@ -221,9 +221,9 @@ Just share **ONE LINK** - the game URL:
 
 **Advanced:** One person can deploy the HTML once, and multiple groups can use it with different Deployment IDs:
 
-- **Your family:** `https://game.com/?deployId=ABC123`
-- **Friend's group:** `https://game.com/?deployId=XYZ789`
-- **Another group:** `https://game.com/?deployId=DEF456`
+- **Your family:** `https://game.com/?id=ABC123`
+- **Friend's group:** `https://game.com/?id=XYZ789`
+- **Another group:** `https://game.com/?id=DEF456`
 
 Each group has their own:
 - ✅ Google Sheet

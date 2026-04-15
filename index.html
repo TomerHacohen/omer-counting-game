@@ -1103,10 +1103,10 @@
                     <h4 style="margin-bottom: 10px;">אופציה 1: שימוש ב-URL Parameter (מומלץ)</h4>
                     <p style="margin-bottom: 10px;">הוסף את ה-Deployment ID שלך ל-URL:</p>
                     <code style="background: #f0f0f0; padding: 5px 10px; border-radius: 5px; display: block; direction: ltr; text-align: left;">
-                        ?deployId=YOUR_DEPLOYMENT_ID
+                        ?id=YOUR_DEPLOYMENT_ID
                     </code>
                     <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                        דוגמה: <code style="font-size: 0.85em;">https://your-game.com/?deployId=ABC123</code>
+                        דוגמה: <code style="font-size: 0.85em;">https://your-game.com/?id=ABC123</code>
                     </p>
                 </div>
 
@@ -1149,12 +1149,12 @@
         // Get Apps Script URL with priority: URL param > localStorage > null (show setup modal)
         function getAppsScriptUrl() {
             // 1. Check URL parameter for deployment ID (highest priority - allows custom deployments)
-            // Example: ?deployId=ABC123 becomes https://script.google.com/macros/s/ABC123/exec
+            // Example: ?id=ABC123 becomes https://script.google.com/macros/s/ABC123/exec
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('deployId')) {
-                const deployId = urlParams.get('deployId');
+            if (urlParams.has('id')) {
+                const deployId = urlParams.get('id');
                 const url = `https://script.google.com/macros/s/${deployId}/exec`;
-                console.log('Using Apps Script URL from deployId parameter:', url);
+                console.log('Using Apps Script URL from id parameter:', url);
                 return url;
             }
 

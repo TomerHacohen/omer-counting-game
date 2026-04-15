@@ -20,7 +20,7 @@ A collaborative web-based game for tracking daily Omer counting during the 49 da
 
 If someone shared a game link with you:
 
-1. **Click the link** they provided (should include `?deployId=...`)
+1. **Click the link** they provided (should include `?id=...`)
 2. **Register** with your name, gender, and emoji
 3. **Start counting!** Click the check-in button each day
 
@@ -33,7 +33,7 @@ If someone shared a game link with you:
 
 2. **Open the game with your ID:**
    ```
-   https://tomerhacohen.github.io/omer-counting-game/?deployId=YOUR_DEPLOYMENT_ID
+   https://tomerhacohen.github.io/omer-counting-game/?id=YOUR_DEPLOYMENT_ID
    ```
 
 3. **Share with your group** - Everyone uses the same link!
@@ -81,7 +81,7 @@ Want to set up the game for your own family/group? **No coding or website hostin
 
 Share this link with everyone:
 ```
-https://tomerhacohen.github.io/omer-counting-game/?deployId=YOUR_DEPLOYMENT_ID
+https://tomerhacohen.github.io/omer-counting-game/?id=YOUR_DEPLOYMENT_ID
 ```
 
 **That's it!** Everyone uses the same link, and all data saves to your private Google Sheet.
@@ -104,7 +104,7 @@ Checks for Deployment ID
 
 The game checks for a Deployment ID in this order:
 
-1. **URL Parameter** (`?deployId=ABC123`) - Highest priority
+1. **URL Parameter** (`?id=ABC123`) - Highest priority
 2. **Settings** (saved in localStorage via ⚙️ button)
 3. **None** → Show setup modal
 
@@ -223,7 +223,7 @@ You need to provide a Deployment ID:
 
 **Option 1 (Recommended):** Add to URL
 ```
-?deployId=YOUR_DEPLOYMENT_ID
+?id=YOUR_DEPLOYMENT_ID
 ```
 
 **Option 2:** Click ⚙️ Settings and enter the Deployment ID

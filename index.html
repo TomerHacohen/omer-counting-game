@@ -1089,13 +1089,64 @@
         </div>
     </div>
 
+    <!-- Setup Modal -->
+    <div class="modal" id="setupModal" style="z-index: 2000;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>ברוכים הבאים! 🌾</h2>
+                <p style="font-size: 1.1em; margin-top: 10px;">כדי להתחיל, יש להגדיר את ה-Deployment ID</p>
+            </div>
+            <div style="text-align: right; padding: 20px; background: #f8f9fa; border-radius: 10px; margin: 20px 0;">
+                <h3 style="color: #667eea; margin-bottom: 15px;">📋 שתי אפשרויות:</h3>
+
+                <div style="margin-bottom: 20px; padding: 15px; background: white; border-radius: 8px; border-right: 4px solid #667eea;">
+                    <h4 style="margin-bottom: 10px;">אופציה 1: שימוש ב-URL Parameter (מומלץ)</h4>
+                    <p style="margin-bottom: 10px;">הוסף את ה-Deployment ID שלך ל-URL:</p>
+                    <code style="background: #f0f0f0; padding: 5px 10px; border-radius: 5px; display: block; direction: ltr; text-align: left;">
+                        ?deployId=YOUR_DEPLOYMENT_ID
+                    </code>
+                    <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                        דוגמה: <code style="font-size: 0.85em;">https://your-game.com/?deployId=ABC123</code>
+                    </p>
+                </div>
+
+                <div style="padding: 15px; background: white; border-radius: 8px; border-right: 4px solid #667eea;">
+                    <h4 style="margin-bottom: 10px;">אופציה 2: הגדרות</h4>
+                    <p>לחץ על כפתור ההגדרות (⚙️) למעלה והזן את ה-Deployment ID</p>
+                </div>
+            </div>
+
+            <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-right: 4px solid #ffc107; margin: 20px 0;">
+                <h4 style="margin-bottom: 10px;">איך מקבלים Deployment ID?</h4>
+                <ol style="text-align: right; margin-right: 20px; line-height: 1.8;">
+                    <li>צור Google Sheet חדש</li>
+                    <li>Extensions → Apps Script</li>
+                    <li>הדבק את הקוד מ-<code>omer-game-apps-script.js</code></li>
+                    <li>Deploy → New deployment → Web app</li>
+                    <li>העתק את החלק שבין <code>/s/</code> ל-<code>/exec</code></li>
+                </ol>
+                <p style="margin-top: 10px;">
+                    <a href="https://github.com/TomerHacohen/omer-counting-game/blob/main/DEPLOYMENT-GUIDE.md"
+                       target="_blank"
+                       style="color: #667eea; text-decoration: underline;">
+                        📖 הוראות מלאות כאן
+                    </a>
+                </p>
+            </div>
+
+            <button class="btn-primary" onclick="closeSetupModal()" style="width: 100%; padding: 15px;">
+                הבנתי, אני אגדיר עכשיו
+            </button>
+        </div>
+    </div>
+
     <script>
         // ============================================
-        // CONFIGURATION - Set your Google Apps Script URL here
+        // CONFIGURATION - No default deployment ID for privacy
         // ============================================
-        const GOOGLE_APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw87ass6tz0wOAFM2nFWS5OH-tpX2itudGhfXqUwfx1MphM4Pnu8EirpYfviV60Wp9L/exec';
+        const GOOGLE_APPS_SCRIPT_URL = ''; // No default - users must provide their own
 
-        // Get Apps Script URL with priority: URL param > localStorage > hardcoded default
+        // Get Apps Script URL with priority: URL param > localStorage > null (show setup modal)
         function getAppsScriptUrl() {
             // 1. Check URL parameter for deployment ID (highest priority - allows custom deployments)
             // Example: ?deployId=ABC123 becomes https://script.google.com/macros/s/ABC123/exec
@@ -1108,15 +1159,19 @@
             }
 
             // 2. Check settings (saved in localStorage via Settings modal)
-            if (gameState.settings && gameState.settings.appsScriptUrl &&
-                gameState.settings.appsScriptUrl !== GOOGLE_APPS_SCRIPT_URL) {
+            if (gameState.settings && gameState.settings.appsScriptUrl && gameState.settings.appsScriptUrl !== '') {
                 console.log('Using Apps Script URL from settings:', gameState.settings.appsScriptUrl);
                 return gameState.settings.appsScriptUrl;
             }
 
-            // 3. Fall back to hardcoded default
-            console.log('Using default hardcoded Apps Script URL');
-            return GOOGLE_APPS_SCRIPT_URL;
+            // 3. No deployment ID configured - return null to trigger setup modal
+            console.log('No deployment ID configured');
+            return null;
+        }
+
+        // Check if deployment ID is configured
+        function isDeploymentConfigured() {
+            return getAppsScriptUrl() !== null;
         }
 
         // Game state
@@ -1166,6 +1221,14 @@
         async function init() {
             loadFromLocalStorage();
             renderEmojiPicker();
+
+            // Check if deployment ID is configured
+            if (!isDeploymentConfigured()) {
+                showSetupModal();
+                // Don't proceed with syncing until configured, but allow UI to work
+                renderCalendar();
+                return;
+            }
 
             // Fetch zmanim first to determine current Hebrew day
             await fetchZmanim();
@@ -1456,15 +1519,8 @@
                 gameState.currentPlayer = data.currentPlayer;
                 gameState.localPlayers = data.localPlayers || [];
                 gameState.settings = data.settings || gameState.settings;
-
-                // If no saved Apps Script URL, use the hardcoded one
-                if (!gameState.settings.appsScriptUrl) {
-                    gameState.settings.appsScriptUrl = GOOGLE_APPS_SCRIPT_URL;
-                }
-            } else {
-                // First time - use hardcoded URL
-                gameState.settings.appsScriptUrl = GOOGLE_APPS_SCRIPT_URL;
             }
+            // No default Apps Script URL - users must provide their own
         }
 
         // Save to localStorage
@@ -1681,6 +1737,20 @@
 
         function closeModal(modalId) {
             document.getElementById(modalId).classList.remove('active');
+        }
+
+        function showSetupModal() {
+            openModal('setupModal');
+        }
+
+        function closeSetupModal() {
+            closeModal('setupModal');
+            // After closing, check if they configured it via settings
+            if (!isDeploymentConfigured()) {
+                // Still not configured - maybe show a message or keep the modal visible
+                alert('אנא הגדר את ה-Deployment ID דרך ההגדרות או השתמש ב-URL parameter');
+                openSettings();
+            }
         }
 
         function openSettings() {

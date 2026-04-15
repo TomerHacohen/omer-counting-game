@@ -145,8 +145,6 @@ omer-counting-game/
 ├── omer-counting-game.html      # Backup copy of game
 ├── omer-game-apps-script.js     # Google Apps Script backend
 ├── DEPLOYMENT-GUIDE.md          # Detailed deployment instructions
-├── OMER-GAME-SETUP.md           # Game features and setup guide
-├── QUICK-START.md               # Quick reference guide
 ├── CONFIG.md                    # Personal deployment config (not in git)
 └── README.md                    # This file
 ```
@@ -156,8 +154,6 @@ omer-counting-game/
 ## Documentation 📚
 
 - **[DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md)** - Complete deployment walkthrough
-- **[OMER-GAME-SETUP.md](OMER-GAME-SETUP.md)** - Game features and usage guide
-- **[QUICK-START.md](QUICK-START.md)** - Quick reference
 
 ---
 
@@ -277,14 +273,11 @@ Free to use and modify for personal, family, and community use.
 If you encounter issues:
 
 1. Check [DEPLOYMENT-GUIDE.md](DEPLOYMENT-GUIDE.md) for detailed instructions
-2. Review [OMER-GAME-SETUP.md](OMER-GAME-SETUP.md) for game features
-3. Open an issue on GitHub
-4. Check browser console (F12) for error messages
+2. Open an issue on GitHub
+3. Check browser console (F12) for error messages
 
 ---
 
 **Quick Links:**
 - 🎮 [Live Demo](https://tomerhacohen.github.io/omer-counting-game/)
 - 📖 [Deployment Guide](DEPLOYMENT-GUIDE.md)
-- 🚀 [Quick Start](QUICK-START.md)
-- ⚙️ [Setup Guide](OMER-GAME-SETUP.md)

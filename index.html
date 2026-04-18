@@ -11,10 +11,15 @@
             padding: 0;
         }
 
+        html {
+            scroll-behavior: auto !important;
+        }
+
         body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            scroll-behavior: auto !important;
             padding: 20px;
             direction: rtl;
         }
@@ -26,13 +31,12 @@
 
         .header {
             position: sticky;
-            top: 60px;
+            top: 110px;
             z-index: 99;
             text-align: center;
             color: white;
-            margin-top: 70px;
+            margin-top: 120px;
             margin-bottom: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             padding: 20px;
             border-radius: 15px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -56,7 +60,7 @@
 
         .checkin-btn {
             position: sticky;
-            top: 220px;
+            top: 270px;
             z-index: 98;
             background: linear-gradient(135deg, #11998e, #38ef7d);
             color: white;
@@ -95,22 +99,26 @@
             margin-top: 30px;
         }
 
-        /* Fade mask for calendar - 100% opaque at header bottom edge */
-        .calendar-container::before {
-            content: '';
+        /* Horizontal separator line */
+        .calendar-separator {
             position: fixed;
-            top: 0;
             left: 0;
             right: 0;
-            height: 180px;
-            background: linear-gradient(to bottom,
-                rgba(245, 245, 245, 1) 0%,
-                rgba(245, 245, 245, 1) 50%,
-                rgba(245, 245, 245, 0.8) 70%,
-                rgba(245, 245, 245, 0.4) 90%,
-                transparent 100%);
+            height: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 98;
             pointer-events: none;
+        }
+
+        /* Fixed overlay to hide calendar above separator */
+        .calendar-cover {
+            position: fixed;
+            left: 0;
+            right: 0;
+            top: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             z-index: 97;
+            pointer-events: none;
         }
 
         .calendar-header {
@@ -513,13 +521,18 @@
             background: rgba(102, 126, 234, 0.9);
             color: white;
             border: none;
-            padding: 10px 15px;
+            width: 45px;
+            height: 45px;
+            padding: 0;
             border-radius: 50%;
             cursor: pointer;
             font-size: 1.2em;
             z-index: 1000;
             transition: all 0.2s;
             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         .settings-btn:hover {
@@ -736,8 +749,8 @@
         /* Responsive - Carousel Layout for Mobile */
         @media (max-width: 768px) {
             .header {
-                top: 60px;
-                margin-top: 70px;
+                top: 110px;
+                margin-top: 120px;
                 padding: 15px;
                 border-radius: 10px;
             }
@@ -757,7 +770,7 @@
             }
 
             .checkin-btn {
-                top: 200px;
+                top: 250px;
                 width: 90%;
                 max-width: 400px;
                 padding: 15px 30px;
@@ -891,6 +904,12 @@
     </style>
 </head>
 <body>
+    <!-- Fixed cover to hide calendar above separator -->
+    <div class="calendar-cover" id="calendarCover"></div>
+
+    <!-- Horizontal separator line -->
+    <div class="calendar-separator" id="calendarSeparator"></div>
+
     <div class="container">
         <!-- Settings button (top-right corner) -->
         <button class="settings-btn" onclick="openSettings()">⚙️</button>
@@ -912,7 +931,7 @@
 
         <button class="checkin-btn" id="checkinBtn" onclick="openBlessingModal()" style="display: none;">בירכתי! 🙏</button>
 
-        <div class="calendar-container">
+        <div class="calendar-container" id="calendarContainer">
             <div class="calendar-header">
                 <h2>לוח ספירת העומר</h2>
             </div>
@@ -2874,6 +2893,54 @@
             if (!document.hidden && gameState.currentPlayer) {
                 checkAndShowCatchup();
             }
+        });
+
+        // Cache DOM elements
+        let checkinBtn, separator, cover;
+
+        // Update separator and cover position based on scroll
+        function updateCalendarClip() {
+            if (!checkinBtn || !separator || !cover) {
+                checkinBtn = document.querySelector('.checkin-btn');
+                separator = document.getElementById('calendarSeparator');
+                cover = document.getElementById('calendarCover');
+                if (!checkinBtn || !separator || !cover) return;
+            }
+
+            // Read button position
+            const btnRect = checkinBtn.getBoundingClientRect();
+            const separatorTop = btnRect.bottom + 15;
+
+            // Update fixed elements (no layout dependency)
+            separator.style.top = `${separatorTop}px`;
+            cover.style.height = `${separatorTop}px`;
+        }
+
+        // Use requestAnimationFrame for smooth updates at 60fps
+        let isScrolling = false;
+        function scheduleClipUpdate() {
+            if (!isScrolling) {
+                isScrolling = true;
+                requestAnimationFrame(() => {
+                    updateCalendarClip();
+                    isScrolling = false;
+                });
+            }
+        }
+
+        // Update on scroll with rAF for smooth performance
+        window.addEventListener('scroll', scheduleClipUpdate, { passive: true });
+
+        // Also update continuously during scroll for ultra-smooth updates
+        function continuousUpdate() {
+            updateCalendarClip();
+            requestAnimationFrame(continuousUpdate);
+        }
+
+        // Initialize on load
+        window.addEventListener('load', () => {
+            updateCalendarClip();
+            continuousUpdate(); // Start continuous update loop
         });
     </script>
 </body>

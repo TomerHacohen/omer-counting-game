@@ -2602,54 +2602,80 @@
 
         function getOmerCountText(day) {
             const weeks = Math.floor((day - 1) / 7);
-            const days = day % 7;
+            const daysInWeek = day % 7;
 
-            if (day === 1) {
-                return 'הַיּוֹם יוֹם אֶחָד לָעוֹמֶר';
-            }
-
-            if (day < 7) {
-                return `הַיּוֹם ${getHebrewNumber(day)} יָמִים לָעוֹמֶר`;
-            }
-
+            // Sephardic format: "היום [total] יום/ימים לעומר, שהם [weeks breakdown]"
             let text = 'הַיּוֹם ';
 
-            if (weeks > 0) {
+            // First part: total day count
+            if (day === 1) {
+                text += 'יוֹם אֶחָד לָעֹֽמֶר';
+            } else if (day <= 10) {
+                text += `${getHebrewDayNumber(day)} יָמִים לָעֹֽמֶר`;
+            } else {
+                text += `${getHebrewDayNumber(day)} יוֹם לָעֹֽמֶר`;
+            }
+
+            // Second part: weeks breakdown (for days 7+)
+            if (day >= 7) {
+                text += ', שֶׁהֵם ';
+
                 if (weeks === 1) {
-                    text += 'שָׁבוּעַ אֶחָד';
+                    text += 'שָׁבֽוּעַ אֶחָד';
                 } else {
-                    text += `${getHebrewNumber(weeks)} שָׁבוּעוֹת`;
+                    text += `${getHebrewWeekNumber(weeks)} שָׁבוּעוֹת`;
+                }
+
+                if (daysInWeek > 0) {
+                    // Conjunction before days varies by number
+                    const vav = [null, 'וְ', 'וּ', 'וּ', 'וְ', 'וַ', 'וְ'][daysInWeek];
+                    text += ' ' + vav;
+
+                    if (daysInWeek === 1) {
+                        text += 'יוֹם אֶחָד';
+                    } else {
+                        text += `${getHebrewWeekDayNumber(daysInWeek)} יָמִים`;
+                    }
                 }
             }
 
-            if (days > 0) {
-                if (weeks > 0) {
-                    text += ' וְ';
-                }
-                if (days === 1) {
-                    text += 'יוֹם אֶחָד';
-                } else {
-                    text += `${getHebrewNumber(days)} יָמִים`;
-                }
-            }
-
-            text += ' לָעוֹמֶר';
             return text;
         }
 
-        function getHebrewNumber(num) {
-            const ones = ['', 'אֶחָד', 'שְׁנֵי', 'שְׁלֹשָׁה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה', 'שִׁבְעָה', 'שְׁמוֹנָה', 'תִּשְׁעָה'];
-            const tens = ['', '', 'עֶשְׂרִים', 'שְׁלֹשִׁים', 'אַרְבָּעִים'];
-
-            if (num < 10) return ones[num];
-            if (num < 20) {
-                const special = ['עֲשָׂרָה', 'אַחַד עָשָׂר', 'שְׁנֵים עָשָׂר', 'שְׁלֹשָׁה עָשָׂר', 'אַרְבָּעָה עָשָׂר', 'חֲמִשָּׁה עָשָׂר', 'שִׁשָּׁה עָשָׂר', 'שִׁבְעָה עָשָׂר', 'שְׁמוֹנָה עָשָׂר', 'תִּשְׁעָה עָשָׂר'];
-                return special[num - 10];
+        // For day counts (total days)
+        function getHebrewDayNumber(num) {
+            if (num <= 10) {
+                const ones = ['', 'אֶחָד', 'שְׁנֵי', 'שְׁלֹשָׁה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה', 'שִׁבְעָה', 'שְׁמוֹנָה', 'תִּשְׁעָה', 'עֲשָׂרָה'];
+                return ones[num];
             }
+            if (num < 20) {
+                const special = ['אַחַד עָשָׂר', 'שְׁנֵים עָשָׂר', 'שְׁלֹשָׁה עָשָׂר', 'אַרְבָּעָה עָשָׂר', 'חֲמִשָּׁה עָשָׂר', 'שִׁשָּׁה עָשָׂר', 'שִׁבְעָה עָשָׂר', 'שְׁמוֹנָה עָשָׂר', 'תִּשְׁעָה עָשָׂר'];
+                return special[num - 11];
+            }
+
+            const tens = ['', '', 'עֶשְׂרִים', 'שְׁלֹשִׁים', 'אַרְבָּעִים'];
+            const ones = ['', 'אֶחָד', 'שְׁנַֽיִם', 'שְׁלֹשָׁה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה', 'שִׁבְעָה', 'שְׁמוֹנָה', 'תִּשְׁעָה'];
 
             const ten = Math.floor(num / 10);
             const one = num % 10;
-            return ones[one] ? `${ones[one]} וָ${tens[ten]}` : tens[ten];
+
+            if (one === 0) return tens[ten];
+
+            // Determine conjunction: וְ for 20s, וּ for 30s and 40s
+            const vav = ten === 2 ? 'וְ' : 'וּ';
+            return `${ones[one]} ${vav}${tens[ten]}`;
+        }
+
+        // For week counts
+        function getHebrewWeekNumber(num) {
+            const numbers = ['', 'אֶחָד', 'שְׁנֵי', 'שְׁלֹשָׁה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה', 'שִׁבְעָה'];
+            return numbers[num];
+        }
+
+        // For day counts within weeks
+        function getHebrewWeekDayNumber(num) {
+            const numbers = ['', 'אֶחָד', 'שְׁנֵי', 'שְׁלֹשָׁה', 'אַרְבָּעָה', 'חֲמִשָּׁה', 'שִׁשָּׁה'];
+            return numbers[num];
         }
 
         async function confirmBlessing() {
